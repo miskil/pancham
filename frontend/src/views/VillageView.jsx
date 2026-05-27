@@ -1,0 +1,556 @@
+import { useState, useEffect, useMemo } from "react";
+import * as baseApi from "../api/village";
+import { apiFetch, postForm } from "../api/client";
+import { VillageStageTracker } from "../components/VillageStageTracker";
+import { Thread } from "../components/Thread";
+import { VillageChannel } from "../components/VillageChannel";
+import { PlanViewer } from "../components/PlanViewer";
+import { RichText } from "../components/RichText";
+
+const TABS = ["Proposal", "Evidence", "Project", "Status"];
+
+function makeApi(token) {
+  if (!token) return baseApi;
+  const f = (path, opts = {}) => apiFetch(path, { ...opts, headers: { Authorization: `Bearer ${token}`, ...opts.headers } });
+  return {
+    getMe: () => f("/village/me"),
+    getProposal: () => f("/village/proposal"),
+    createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
+    updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
+    createPlan: (b) => f("/village/plan", { method: "POST", body: JSON.stringify(b) }),
+    getBaseline: () => f("/village/plan/baseline"),
+    getWip: () => f("/village/plan/wip"),
+    updateWip: (b) => f("/village/plan/wip", { method: "PATCH", body: JSON.stringify(b) }),
+    listUpdates: () => f("/village/status"),
+    createUpdate: (b) => f("/village/status", { method: "POST", body: JSON.stringify(b) }),
+    getThreadMessages: (uid) => f(`/threads/${uid}/messages`),
+    postThreadMessage: (uid, message) => f(`/threads/${uid}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
+    getChannelMessages: (vid) => f(`/channels/${vid}/messages`),
+    postChannelMessage: (vid, message) => f(`/channels/${vid}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
+    uploadMedia: (updateId, formData) => {
+      const headers = { Authorization: `Bearer ${token}` };
+      return fetch(`${import.meta.env.VITE_API_URL || "/api"}/village/status/${updateId}/media`, { method: "POST", body: formData, headers })
+        .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
+    },
+    listEvidence: () => f("/village/evidence"),
+    uploadEvidence: (formData) => {
+      const headers = { Authorization: `Bearer ${token}` };
+      return fetch(`${import.meta.env.VITE_API_URL || "/api"}/village/evidence`, { method: "POST", body: formData, headers })
+        .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
+    },
+    deleteEvidence: (id) => f(`/village/evidence/${id}`, { method: "DELETE" }),
+  };
+}
+
+export function VillageView({ previewToken } = {}) {
+  const api = useMemo(() => makeApi(previewToken), [previewToken]);
+  const [tab, setTab] = useState("Proposal");
+  const [me, setMe] = useState(null);
+
+  useEffect(() => { api.getMe().then(setMe).catch(() => {}); }, [api]);
+
+  const proposalAccepted = me && !["CREATED", "PROPOSAL_SUBMITTED", "UNDER_REVIEW", "AMENDMENT_REQUESTED", "AMENDED"].includes(me.internal_status);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-primary-800 text-white px-4 py-3">
+        <span className="font-bold text-lg">Pancham</span>
+        {me && <span className="ml-2 text-primary-200 text-sm">{me.name}</span>}
+      </header>
+
+      {me && (
+        <div className="bg-white border-b px-4 pt-4 pb-2">
+          <VillageStageTracker stage={me.stage} subStatus={me.sub_status} />
+        </div>
+      )}
+
+      <div className="flex border-b bg-white overflow-x-auto">
+        {TABS.map((t) => {
+          const locked = t === "Project" && !proposalAccepted;
+          return (
+            <button
+              key={t}
+              onClick={() => !locked && setTab(t)}
+              className={`px-5 py-3 text-sm font-medium whitespace-nowrap
+                ${tab === t ? "border-b-2 border-primary-700 text-primary-700" : "text-gray-500"}
+                ${locked ? "opacity-40 cursor-not-allowed" : "hover:text-gray-700"}
+              `}
+            >
+              {t} {locked && "🔒"}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="p-4 max-w-2xl mx-auto">
+        {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
+        {tab === "Evidence" && <EvidenceTab api={api} />}
+        {tab === "Project" && proposalAccepted && <ProjectTab me={me} api={api} />}
+        {tab === "Status" && <StatusTab me={me} api={api} />}
+      </div>
+    </div>
+  );
+}
+
+function ProposalTab({ me, onUpdate, api }) {
+  const [proposal, setProposal] = useState(null);
+  const [form, setForm] = useState({ focus_area: "", description: "", community_context: "", key_activities: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const readonly = proposal?.status === "ACCEPTED";
+
+  useEffect(() => {
+    api.getProposal().then((p) => {
+      setProposal(p);
+      setForm({ focus_area: p.focus_area || "", description: p.description || "", community_context: p.community_context || "", key_activities: p.key_activities || "" });
+    }).catch(() => {});
+  }, [api]);
+
+  async function save(submit) {
+    console.log("save called, submit=", submit);
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      const body = { ...form, submit };
+      const p = proposal
+        ? await api.updateProposal(body)
+        : await api.createProposal(body);
+      setProposal(p);
+      setSuccess(submit ? "Proposal submitted!" : "Draft saved.");
+      if (submit) {
+        const fresh = await api.getMe();
+        onUpdate(fresh);
+      }
+    } catch (err) {
+      console.error("save error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const STATUS_LABELS = {
+    DRAFT: { label: "Draft", color: "bg-gray-100 text-gray-600" },
+    SUBMITTED: { label: "Submitted — awaiting review", color: "bg-blue-100 text-blue-700" },
+    UNDER_REVIEW: { label: "Under review", color: "bg-yellow-100 text-yellow-700" },
+    AMENDMENT_REQUESTED: { label: "Amendment requested", color: "bg-orange-100 text-orange-700" },
+    AMENDED: { label: "Amendment submitted", color: "bg-blue-100 text-blue-700" },
+    ACCEPTED: { label: "Accepted", color: "bg-green-100 text-green-700" },
+    DECLINED: { label: "Declined", color: "bg-red-100 text-red-700" },
+  };
+  const canEdit = !proposal || ["DRAFT", "AMENDMENT_REQUESTED"].includes(proposal?.status);
+
+  return (
+    <div className="bg-white rounded-xl border p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-gray-700">Village Proposal</h2>
+        {proposal && (
+          <span className={`text-xs font-medium rounded-full px-3 py-1 ${STATUS_LABELS[proposal.status]?.color}`}>
+            {STATUS_LABELS[proposal.status]?.label ?? proposal.status}
+          </span>
+        )}
+      </div>
+
+      {proposal?.reviewer_notes && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+          <strong>Admin notes:</strong> {proposal.reviewer_notes}
+        </div>
+      )}
+      {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
+      {success && <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">{success}</div>}
+
+      {["focus_area", "description", "community_context", "key_activities"].map((f) => (
+        <div key={f}>
+          <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">{f.replace(/_/g, " ")}</label>
+          {canEdit ? (
+            f === "focus_area" ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form[f]}
+                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
+              />
+            ) : (
+              <textarea
+                className="w-full border rounded px-3 py-2 text-sm h-24"
+                value={form[f]}
+                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
+              />
+            )
+          ) : (
+            <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
+              {form[f] || <span className="text-gray-400 italic">Not filled in</span>}
+            </p>
+          )}
+        </div>
+      ))}
+
+      {canEdit && (
+        <div className="flex gap-3">
+          <button onClick={() => save(false)} disabled={loading} className="btn-sm bg-gray-400">
+            {loading ? "Saving…" : "Save Draft"}
+          </button>
+          <button onClick={() => save(true)} disabled={loading} className="btn-sm bg-primary-700">
+            {loading ? "Submitting…" : proposal?.status === "AMENDMENT_REQUESTED" ? "Resubmit" : "Submit"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DOC_TYPE_LABELS = {
+  GRAMSABHA: "Gramsabha Letter",
+  PANCHAYAT: "Panchayat Letter",
+  OTHER: "Other Document",
+};
+
+function EvidenceTab({ api }) {
+  const [docs, setDocs] = useState([]);
+  const [docType, setDocType] = useState("GRAMSABHA");
+  const [notes, setNotes] = useState("");
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => { api.listEvidence().then(setDocs).catch(() => {}); }, [api]);
+
+  async function upload(e) {
+    e.preventDefault();
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("doc_type", docType);
+      fd.append("notes", notes);
+      fd.append("file", file);
+      const doc = await api.uploadEvidence(fd);
+      setDocs((prev) => [doc, ...prev]);
+      setFile(null);
+      setNotes("");
+      e.target.reset();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function remove(id) {
+    try {
+      await api.deleteEvidence(id);
+      setDocs((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-700 mb-1">Support Evidence</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Upload scanned copies of letters from Gramsabha and Panchayat supporting Pancham in your village.
+        </p>
+
+        <form onSubmit={upload} className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Document Type</label>
+            <select
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+            >
+              {Object.entries(DOC_TYPE_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">File</label>
+            <input
+              type="file"
+              required
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+            <p className="text-xs text-gray-400 mt-0.5">PDF, JPG or PNG accepted</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notes (optional)</label>
+            <input
+              type="text"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Resolution dated 12 Jan 2026"
+            />
+          </div>
+
+          {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
+
+          <button type="submit" disabled={uploading || !file} className="btn-sm bg-primary-700 disabled:opacity-60">
+            {uploading ? "Uploading…" : "Upload Document"}
+          </button>
+        </form>
+      </div>
+
+      {docs.length > 0 && (
+        <div className="bg-white rounded-xl border p-5">
+          <h3 className="font-medium text-gray-700 mb-3">Uploaded Documents</h3>
+          <div className="space-y-2">
+            {docs.map((d) => (
+              <div key={d.id} className="flex items-start justify-between gap-3 p-3 border rounded-lg bg-gray-50">
+                <div className="min-w-0">
+                  <span className="inline-block text-xs font-medium bg-primary-100 text-primary-700 rounded px-2 py-0.5 mb-1">
+                    {DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}
+                  </span>
+                  <p className="text-sm text-gray-700 truncate">{d.filename}</p>
+                  {d.notes && <p className="text-xs text-gray-500 mt-0.5">{d.notes}</p>}
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(d.uploaded_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={d.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary-600 hover:underline"
+                  >
+                    View
+                  </a>
+                  <button
+                    onClick={() => remove(d.id)}
+                    className="text-xs text-red-400 hover:text-red-600"
+                    title="Delete"
+                  >✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {docs.length === 0 && (
+        <p className="text-sm text-gray-400 text-center py-4">No documents uploaded yet.</p>
+      )}
+    </div>
+  );
+}
+
+function ProjectTab({ me, api }) {
+  const [baseline, setBaseline] = useState(null);
+  const [wip, setWip] = useState(null);
+  const [draftData, setDraftData] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [activeView, setActiveView] = useState("wip"); // "baseline" | "wip"
+
+  useEffect(() => {
+    api.getBaseline().then(setBaseline).catch(() => {});
+    api.getWip().then(setWip).catch(() => {});
+  }, [api]);
+
+  async function submitPlan() {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.createPlan({ plan_data: draftData, submit: true });
+      setBaseline(await api.getBaseline().catch(() => null));
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
+  }
+
+  async function saveWip() {
+    if (!draftData) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.updateWip({ plan_data: draftData });
+      setWip(updated);
+      setDraftData(null);
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
+  }
+
+  if (!baseline) {
+    return (
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-700">3-Year Activity Plan</h2>
+          <button onClick={submitPlan} disabled={saving} className="btn-sm bg-primary-700">
+            {saving ? "Submitting…" : "Submit Plan"}
+          </button>
+        </div>
+        {error && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
+        <PlanViewer
+          plan={{ plan_data: draftData }}
+          readonly={false}
+          onChange={setDraftData}
+        />
+      </div>
+    );
+  }
+
+  const frozen = baseline.status === "FROZEN";
+  const currentWipData = draftData ?? wip?.plan_data;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 bg-white border rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setActiveView("baseline")}
+          className={`px-4 py-1.5 rounded text-sm font-medium transition-colors
+            ${activeView === "baseline" ? "bg-primary-700 text-white" : "text-gray-500 hover:text-gray-700"}`}
+        >
+          Baseline
+        </button>
+        <button
+          onClick={() => setActiveView("wip")}
+          className={`px-4 py-1.5 rounded text-sm font-medium transition-colors
+            ${activeView === "wip" ? "bg-primary-700 text-white" : "text-gray-500 hover:text-gray-700"}`}
+        >
+          WIP
+        </button>
+      </div>
+
+      {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
+
+      {activeView === "baseline" && (
+        <div className="bg-white rounded-xl border p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-semibold text-gray-700">Baseline Plan</h2>
+            <span className="text-xs bg-gray-100 text-gray-500 rounded px-2 py-0.5">Frozen — read only</span>
+          </div>
+          <PlanViewer plan={baseline} readonly={true} />
+        </div>
+      )}
+
+      {activeView === "wip" && (
+        <div className="bg-white rounded-xl border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-700">WIP Plan</h2>
+            {wip && draftData && (
+              <button onClick={saveWip} disabled={saving} className="btn-sm bg-primary-700">
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            )}
+          </div>
+          {wip ? (
+            <PlanViewer
+              plan={{ plan_data: currentWipData }}
+              readonly={false}
+              onChange={setDraftData}
+            />
+          ) : (
+            <p className="text-sm text-gray-400">WIP plan not yet created — admin must accept the baseline first.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusTab({ me, api }) {
+  const [updates, setUpdates] = useState([]);
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const fileInputRef = useState(null);
+
+  useEffect(() => { api.listUpdates().then(setUpdates).catch(() => {}); }, [api]);
+
+  async function post() {
+    if (!text.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const u = await api.createUpdate({ description: text });
+      if (file) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const media = await api.uploadMedia(u.id, fd);
+        u.media_files = [media];
+      }
+      setUpdates((prev) => [u, ...prev]);
+      setText("");
+      setFile(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-4">
+        <h2 className="font-semibold text-gray-700 mb-3">Post Update</h2>
+        <textarea
+          className="w-full border rounded px-3 py-2 text-sm h-24 mb-2"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="What's happening in the village…"
+        />
+        <div className="flex items-center gap-3">
+          <label className="cursor-pointer flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 00-5.656-5.656L5.757 10.757a6 6 0 108.486 8.486L20 13" />
+            </svg>
+            {file ? file.name : "Attach image or video"}
+            <input
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => setFile(e.target.files[0] || null)}
+            />
+          </label>
+          {file && (
+            <button onClick={() => setFile(null)} className="text-xs text-red-400 hover:text-red-600">✕ Remove</button>
+          )}
+        </div>
+        {file && file.type.startsWith("image/") && (
+          <img src={URL.createObjectURL(file)} alt="preview" className="mt-2 rounded border" />
+        )}
+        {file && file.type.startsWith("video/") && (
+          <video src={URL.createObjectURL(file)} className="mt-2 max-h-40 w-full rounded border" controls />
+        )}
+        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+        <button
+          onClick={post}
+          disabled={loading || !text.trim()}
+          className="mt-3 btn-sm bg-primary-700 disabled:opacity-60"
+        >
+          {loading ? "Posting…" : "Post"}
+        </button>
+      </div>
+
+      {me && <VillageChannel villageId={me.id} />}
+
+      <div className="space-y-3">
+        {updates.map((u) => (
+          <div key={u.id} className="bg-white rounded-xl border p-4">
+            <p className="text-xs text-gray-400 mb-2">
+              {new Date(u.submitted_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+            </p>
+            {(u.media_files || []).map((m) => (
+              m.media_type === "PHOTO"
+                ? <img key={m.id} src={m.file_url} alt="" className="w-full rounded mb-2" />
+                : <video key={m.id} src={m.file_url} controls className="w-full rounded mb-2" />
+            ))}
+            <RichText text={u.description} />
+            {u.is_published && <span className="text-xs text-green-600 font-medium mt-1 block">Published</span>}
+            <button onClick={() => setSelected(selected?.id === u.id ? null : u)} className="text-xs text-primary-600 mt-1 block">
+              {selected?.id === u.id ? "Hide thread" : "View thread"}
+            </button>
+            {selected?.id === u.id && <Thread updateId={u.id} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
