@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -13,6 +14,16 @@ class Settings(BaseSettings):
     storage_url: str = ""
     bhau_api_url: str = "https://bhau.railway.app"
     bhau_enabled: bool = False
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        if isinstance(value, str):
+            if value.startswith("postgres://"):
+                return value.replace("postgres://", "postgresql+asyncpg://", 1)
+            if value.startswith("postgresql://") and "+asyncpg" not in value:
+                return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
 
     class Config:
         env_file = ".env"
