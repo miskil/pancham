@@ -3,7 +3,7 @@ builder = "RAILPACK"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm run preview -- --host 0.0.0.0 --port $PORT"
+startCommand = "npm run start"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
