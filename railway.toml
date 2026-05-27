@@ -3,7 +3,8 @@ builder = "RAILPACK"
 buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-startCommand = "alembic -c backend/alembic.ini upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+preDeployCommand = ["alembic -c backend/alembic.ini upgrade head"]
+startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/docs"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
