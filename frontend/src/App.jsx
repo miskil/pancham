@@ -31,7 +31,7 @@ export default function App() {
     <div className="relative">
       <button
         onClick={handleLogout}
-        className="fixed top-3 right-3 z-50 text-xs bg-white border rounded px-2 py-1 text-gray-500 shadow-sm hover:bg-gray-50"
+        className="logout-fab"
       >
         Logout
       </button>

@@ -24,40 +24,75 @@ export function LoginView({ onLogin }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-50">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-primary-800 mb-1">Pancham</h1>
-        <p className="text-sm text-gray-500 mb-6">पंचम — Village Development</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
-              required
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary-700 text-white rounded-lg py-2.5 font-medium text-sm hover:bg-primary-800 disabled:opacity-60"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+    <div className="app-shell flex items-center justify-center">
+      <div className="app-frame w-full max-w-5xl">
+        <div className="grid lg:grid-cols-[1.2fr_0.95fr]">
+          <section className="topbar min-h-[320px] lg:min-h-[640px]">
+            <div className="hero-grid w-full">
+              <div>
+                <p className="topbar-kicker">Pancham Platform</p>
+                <h1 className="topbar-title mt-3">Village development with a field-first command center.</h1>
+                <p className="topbar-subtitle">
+                  Pancham connects programme teams, village leads, and donors through one shared operating surface for proposals, plans, reporting, and donor visibility.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div className="hero-panel">
+                  <p className="eyebrow">For Admin</p>
+                  <p className="mt-2 text-sm text-primary-50/85">Onboard villages, review submissions, and publish only the right updates to donors.</p>
+                </div>
+                <div className="hero-panel">
+                  <p className="eyebrow">For Village</p>
+                  <p className="mt-2 text-sm text-primary-50/85">Track programme stages, submit status evidence, and manage work against the frozen baseline.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="content-shell flex items-center justify-center bg-white/55">
+            <div className="surface-card w-full max-w-md p-6 md:p-8">
+              <p className="eyebrow">Secure Sign In</p>
+              <h2 className="section-title mt-2">पंचम</h2>
+              <p className="text-sm text-ink-500 mt-2 mb-6">Access the right workspace for Admin, Village, or Donor operations.</p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-ink-700 mb-1.5">Username</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-3.5 py-3 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-700 mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3.5 py-3 text-sm"
+                    required
+                  />
+                </div>
+                {error && <p className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-sm w-full py-3"
+                >
+                  {loading ? "Signing in…" : "Sign in"}
+                </button>
+              </form>
+
+              <div className="info-card mt-5">
+                <p className="font-medium text-ink-700">Built for low-friction field operations</p>
+                <p className="mt-1 text-ink-500">Fast login, clear programme state, and shared contact context across every role.</p>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

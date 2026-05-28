@@ -111,29 +111,36 @@ export function VillageView({ previewToken } = {}) {
   const proposalAccepted = me && !["CREATED", "PROPOSAL_SUBMITTED", "UNDER_REVIEW", "AMENDMENT_REQUESTED", "AMENDED"].includes(me.internal_status);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-primary-800 text-white px-4 py-3">
-        <span className="font-bold text-lg">Pancham</span>
-        {me && <span className="ml-2 text-primary-200 text-sm">{me.name}</span>}
+    <div className="app-shell">
+      <div className="app-frame">
+      <header className="topbar">
+        <div>
+          <p className="topbar-kicker">Village Workspace</p>
+          <span className="topbar-title">Pancham</span>
+          {me && <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>}
+        </div>
+        <div className="hero-panel max-w-sm">
+          <p className="eyebrow text-primary-50/70">Field View</p>
+          <p className="mt-2 text-sm text-primary-50/85">Track stage progress, keep plans aligned to baseline, and publish grounded updates from the village side.</p>
+        </div>
       </header>
 
       {me && (
-        <div className="bg-white border-b px-4 pt-4 pb-2">
+        <div className="bg-white/55 border-b border-primary-100/60 px-4 pt-4 pb-2 md:px-6">
           <VillageStageTracker stage={me.stage} subStatus={me.sub_status} />
           <VillageOrgReadOnly village={me} />
         </div>
       )}
 
-      <div className="flex border-b bg-white overflow-x-auto">
+      <div className="tabbar">
         {TABS.map((t) => {
           const locked = t === "Project" && !proposalAccepted;
           return (
             <button
               key={t}
               onClick={() => !locked && setTab(t)}
-              className={`px-5 py-3 text-sm font-medium whitespace-nowrap
-                ${tab === t ? "border-b-2 border-primary-700 text-primary-700" : "text-gray-500"}
-                ${locked ? "opacity-40 cursor-not-allowed" : "hover:text-gray-700"}
+              className={`tab-pill ${tab === t ? "tab-pill-active" : "tab-pill-idle"}
+                ${locked ? "opacity-40 cursor-not-allowed" : ""}
               `}
             >
               {t} {locked && "🔒"}
@@ -142,13 +149,14 @@ export function VillageView({ previewToken } = {}) {
         })}
       </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="content-shell max-w-4xl mx-auto">
         {tab === "Dashboard" && <DashboardTab me={me} api={api} />}
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab api={api} />}
         {tab === "Project" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
+      </div>
       </div>
     </div>
   );
