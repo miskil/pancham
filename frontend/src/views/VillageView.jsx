@@ -114,19 +114,21 @@ export function VillageView({ previewToken } = {}) {
     <div className="app-shell">
       <div className="app-frame">
       <header className="topbar">
-        <div>
-          <span className="topbar-title">Pancham</span>
-          {me && <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>}
-          {me && (me.village_lead_name || me.ngo_name) && (
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-primary-50/75">
-              {me.village_lead_name && <span><span className="text-primary-50/50">Lead</span> {me.village_lead_name}{me.village_lead_phone ? ` · ${me.village_lead_phone}` : ""}</span>}
-              {me.ngo_name && <span><span className="text-primary-50/50">NGO</span> {me.ngo_name}{me.ngo_contact_name ? ` · ${me.ngo_contact_name}` : ""}{me.ngo_contact_phone ? ` (${me.ngo_contact_phone})` : ""}</span>}
+        <div className="flex gap-8 items-start w-full">
+          <div>
+            <span className="topbar-title">Pancham</span>
+          </div>
+          {me && (
+            <div className="flex-1">
+              <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>
+              {(me.village_lead_name || me.ngo_name) && (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-primary-50/75">
+                  {me.village_lead_name && <span><span className="text-primary-50/50">Lead</span> {me.village_lead_name}{me.village_lead_phone ? ` · ${me.village_lead_phone}` : ""}</span>}
+                  {me.ngo_name && <span><span className="text-primary-50/50">NGO</span> {me.ngo_name}{me.ngo_contact_name ? ` · ${me.ngo_contact_name}` : ""}{me.ngo_contact_phone ? ` (${me.ngo_contact_phone})` : ""}</span>}
+                </div>
+              )}
             </div>
           )}
-        </div>
-        <div className="hero-panel max-w-sm">
-          <p className="eyebrow text-primary-50/70">Field View</p>
-          <p className="mt-2 text-sm text-primary-50/85">Track stage progress, keep plans aligned to baseline, and publish grounded updates from the village side.</p>
         </div>
       </header>
 
