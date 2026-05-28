@@ -44,3 +44,8 @@ def require_role(*roles: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return user
     return dep
+
+
+admin_only = require_role("ADMIN")
+village_only = require_role("VILLAGE")
+donor_only = require_role("ADMIN", "DONOR")
