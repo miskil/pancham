@@ -10,6 +10,38 @@ import { VillageView } from "./VillageView";
 const TABS = ["Onboard", "Proposals", "Plans", "Status"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 
+function ExportDriveButton({ onExport }) {
+  const [state, setState] = useState("idle"); // idle | loading | done | error
+  const [link, setLink] = useState(null);
+
+  async function handleClick() {
+    setState("loading");
+    try {
+      const result = await onExport();
+      setLink(result.web_view_link);
+      setState("done");
+    } catch (err) {
+      setState("error");
+      alert("Export failed: " + err.message);
+    }
+  }
+
+  if (state === "done" && link) {
+    return (
+      <a href={link} target="_blank" rel="noopener noreferrer"
+        className="btn-sm bg-green-700 inline-flex items-center gap-1">
+        ✓ Open in Drive
+      </a>
+    );
+  }
+  return (
+    <button onClick={handleClick} disabled={state === "loading"}
+      className="btn-sm bg-gray-700 disabled:opacity-50">
+      {state === "loading" ? "Exporting…" : "Export to Drive"}
+    </button>
+  );
+}
+
 export function AdminView() {
   const [tab, setTab] = useState("Onboard");
   const [preview, setPreview] = useState(null); // { token, village_name }
@@ -214,6 +246,7 @@ function ProposalsTab() {
                   <button onClick={() => act(api.declineProposal)} className="btn-sm bg-red-500">Decline</button>
                 </>
               )}
+              <ExportDriveButton onExport={() => api.exportProposal(selected.id)} />
             </div>
             <VillageChannel villageId={selected.village_id} />
             <EvidencePanel villageId={selected.village_id} />
@@ -351,6 +384,7 @@ function PlansTab() {
                     {saving ? "…" : "Accept & Freeze"}
                   </button>
                 )}
+                <ExportDriveButton onExport={() => api.exportPlan(selected.id)} />
               </div>
             </div>
             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}

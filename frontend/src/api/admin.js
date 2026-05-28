@@ -20,5 +20,8 @@ export const getWipPlan = (id) => get(`/admin/plans/${id}/wip`);
 export const acceptPlan = (id) => patch(`/admin/plans/${id}/accept`);
 
 export const listStatusUpdates = (villageId) => get(`/admin/status-updates${villageId ? `?village_id=${villageId}` : ""}`);
+
+export const exportProposal = (id) => post(`/admin/export/proposals/${id}`);
+export const exportPlan = (id) => post(`/admin/export/plans/${id}`);
 export const publishUpdate = (id) => patch(`/admin/status-updates/${id}/publish`);
 export const unpublishUpdate = (id) => patch(`/admin/status-updates/${id}/unpublish`);
