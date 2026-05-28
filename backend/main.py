@@ -8,9 +8,19 @@ from .routers import threads, channels, donor
 
 app = FastAPI(title="Pancham API")
 
+
+def _cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "")
+    if raw:
+        return [x.strip() for x in raw.split(",") if x.strip()]
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
