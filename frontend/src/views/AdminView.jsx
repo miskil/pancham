@@ -499,20 +499,20 @@ function EvidencePanel({ villageId }) {
       <h3 className="text-sm font-semibold text-gray-600 mb-3">Support Evidence</h3>
       <div className="space-y-2">
         {docs.map((d) => (
-          <div key={d.id} className="flex items-start justify-between gap-3 p-3 border rounded-lg bg-gray-50">
+          <div key={d.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-3 border rounded-lg bg-gray-50">
             <div className="min-w-0">
               <span className="inline-block text-xs font-medium bg-primary-100 text-primary-700 rounded px-2 py-0.5 mb-1">
                 {DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}
               </span>
-              <p className="text-sm text-gray-700 truncate">{d.filename}</p>
-              {d.notes && <p className="text-xs text-gray-500 mt-0.5">{d.notes}</p>}
+              <p className="text-sm text-gray-700 break-words">{d.filename}</p>
+              {d.notes && <p className="text-xs text-gray-500 mt-0.5 break-words">{d.notes}</p>}
               <p className="text-xs text-gray-400 mt-0.5">{new Date(d.uploaded_at).toLocaleDateString()}</p>
             </div>
             <a
               href={d.file_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-primary-600 hover:underline shrink-0"
+              className="text-xs text-primary-600 hover:underline shrink-0 self-start sm:self-auto"
             >
               View
             </a>

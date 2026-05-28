@@ -43,7 +43,7 @@ export function VillageChannel({ villageId }) {
         ))}
         {messages.length === 0 && <p className="text-sm text-gray-400">No messages yet.</p>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <input
           className="flex-1 border rounded px-3 py-2 text-sm"
           value={text}
@@ -54,7 +54,7 @@ export function VillageChannel({ villageId }) {
         <button
           onClick={send}
           disabled={loading || !text.trim()}
-          className="px-4 py-2 bg-primary-600 text-white rounded text-sm disabled:opacity-50"
+          className="px-4 py-2 bg-primary-600 text-white rounded text-sm disabled:opacity-50 w-full sm:w-auto"
         >
           Send
         </button>
