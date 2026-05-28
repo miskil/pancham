@@ -249,20 +249,24 @@ function ProposalTab({ me, onUpdate, api }) {
   const [form, setForm] = useState({ focus_area: "", description: "", community_context: "", key_activities: "" });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [noProposal, setNoProposal] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const readonly = proposal?.status === "ACCEPTED";
 
   useEffect(() => {
     api.getProposal().then((p) => {
+      setNoProposal(false);
       setLoadError(null);
       setProposal(p);
       setForm({ focus_area: p.focus_area || "", description: p.description || "", community_context: p.community_context || "", key_activities: p.key_activities || "" });
     }).catch((err) => {
       if ((err.message || "").toLowerCase().includes("no proposal yet")) {
         setLoadError(null);
+        setNoProposal(true);
         return;
       }
+      setNoProposal(false);
       setLoadError(err.message || "Failed to load proposal");
     });
   }, [api]);
@@ -315,10 +319,16 @@ function ProposalTab({ me, onUpdate, api }) {
           )}
         </div>
       </div>
+      <p className="text-xs text-gray-500">Current Village ID: {me?.id || "unknown"}</p>
 
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
           <strong>Admin notes:</strong> {proposal.reviewer_notes}
+        </div>
+      )}
+      {noProposal && !proposal && (
+        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+          No proposal record found for this village ID on the current server.
         </div>
       )}
       {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
