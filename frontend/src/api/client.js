@@ -1,6 +1,20 @@
 import { getToken, clearAuth } from "../auth";
 
-const BASE = import.meta.env.VITE_API_URL || "/api";
+const PRIMARY_BASE = import.meta.env.VITE_API_URL || "/api";
+const RAILWAY_BACKEND_FALLBACK = "https://pancham-server.up.railway.app";
+const BASES = [...new Set([PRIMARY_BASE, RAILWAY_BACKEND_FALLBACK])];
+
+async function fetchWithFallback(path, options) {
+  let lastError = null;
+  for (const base of BASES) {
+    try {
+      return await fetch(`${base}${path}`, options);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("Failed to fetch");
+}
 
 export async function apiFetch(path, options = {}) {
   const token = getToken();
@@ -8,7 +22,7 @@ export async function apiFetch(path, options = {}) {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   Object.assign(headers, options.headers); // caller headers win (e.g. preview token)
 
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  const res = await fetchWithFallback(path, { ...options, headers });
 
   if (res.status === 401) {
     clearAuth();
@@ -35,7 +49,7 @@ export async function download(path, method = "POST") {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE}${path}`, { method, headers });
+  const res = await fetchWithFallback(path, { method, headers });
 
   if (res.status === 401) {
     clearAuth();
@@ -61,7 +75,7 @@ export async function postForm(path, formData) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   // No Content-Type — browser sets it with the multipart boundary automatically
-  const res = await fetch(`${BASE}${path}`, { method: "POST", body: formData, headers });
+  const res = await fetchWithFallback(path, { method: "POST", body: formData, headers });
   if (res.status === 401) { clearAuth(); window.location.hash = "#/login"; throw new Error("Unauthorized"); }
   if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || "Request failed"); }
   return res.json();
