@@ -156,6 +156,7 @@ export function VillageView({ previewToken } = {}) {
 function DashboardTab({ me, api }) {
   const [loading, setLoading] = useState(true);
   const [proposal, setProposal] = useState(null);
+  const [proposalLoadError, setProposalLoadError] = useState(null);
   const [baseline, setBaseline] = useState(null);
   const [wip, setWip] = useState(null);
   const [updates, setUpdates] = useState([]);
@@ -163,7 +164,10 @@ function DashboardTab({ me, api }) {
   useEffect(() => {
     let mounted = true;
     Promise.all([
-      api.getProposal().catch(() => null),
+      api.getProposal().catch((err) => {
+        if (mounted) setProposalLoadError(err.message || "Failed to load proposal");
+        return null;
+      }),
       api.getBaseline().catch(() => null),
       api.getWip().catch(() => null),
       api.listUpdates().catch(() => []),
@@ -205,11 +209,17 @@ function DashboardTab({ me, api }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Proposal" value={proposal?.status || "Not started"} />
+        <StatCard label="Proposal" value={proposal?.status || (proposalLoadError ? "Load error" : "Not started")} />
         <StatCard label="Plan" value={baseline?.status || "Not submitted"} />
         <StatCard label="Plan Filled" value={`${planFillPercent}%`} />
         <StatCard label="Updates Published" value={`${publishedCount}/${updates.length}`} />
       </div>
+
+      {proposalLoadError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+          Proposal could not be loaded: {proposalLoadError}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border p-5">
         <h3 className="font-medium text-gray-700 mb-3">Checklist</h3>
@@ -238,15 +248,23 @@ function ProposalTab({ me, onUpdate, api }) {
   const [proposal, setProposal] = useState(null);
   const [form, setForm] = useState({ focus_area: "", description: "", community_context: "", key_activities: "" });
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const readonly = proposal?.status === "ACCEPTED";
 
   useEffect(() => {
     api.getProposal().then((p) => {
+      setLoadError(null);
       setProposal(p);
       setForm({ focus_area: p.focus_area || "", description: p.description || "", community_context: p.community_context || "", key_activities: p.key_activities || "" });
-    }).catch(() => {});
+    }).catch((err) => {
+      if ((err.message || "").toLowerCase().includes("no proposal yet")) {
+        setLoadError(null);
+        return;
+      }
+      setLoadError(err.message || "Failed to load proposal");
+    });
   }, [api]);
 
   async function save(submit) {
@@ -303,6 +321,7 @@ function ProposalTab({ me, onUpdate, api }) {
           <strong>Admin notes:</strong> {proposal.reviewer_notes}
         </div>
       )}
+      {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">{success}</div>}
 
