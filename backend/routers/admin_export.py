@@ -1,6 +1,7 @@
 import io
 import os
 from datetime import date
+import logging
 
 from docx import Document
 from docx.shared import Pt
@@ -16,6 +17,7 @@ from ..models.village import Village
 from ..utils.drive import upload_docx
 
 router = APIRouter(prefix="/admin/export", tags=["admin-export"])
+logger = logging.getLogger(__name__)
 
 
 def _docx_bytes(doc: Document) -> bytes:
@@ -86,7 +88,11 @@ async def export_proposal(
         doc.add_paragraph(proposal.reviewer_notes)
 
     filename = f"Proposal_{village.name if village else proposal.village_id}_{date.today()}.docx"
-    result = upload_docx(filename, _docx_bytes(doc), folder_id)
+    try:
+        result = upload_docx(filename, _docx_bytes(doc), folder_id)
+    except Exception as exc:
+        logger.exception("Proposal export failed", extra={"proposal_id": proposal_id})
+        raise HTTPException(status_code=500, detail=f"Drive export failed: {str(exc)}")
     return {"filename": filename, **result}
 
 
@@ -148,5 +154,9 @@ async def export_plan(
         doc.add_paragraph()
 
     filename = f"Plan_{plan.version_type}_{village.name if village else plan.village_id}_{date.today()}.docx"
-    result = upload_docx(filename, _docx_bytes(doc), folder_id)
+    try:
+        result = upload_docx(filename, _docx_bytes(doc), folder_id)
+    except Exception as exc:
+        logger.exception("Plan export failed", extra={"plan_id": plan_id})
+        raise HTTPException(status_code=500, detail=f"Drive export failed: {str(exc)}")
     return {"filename": filename, **result}
