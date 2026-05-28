@@ -115,9 +115,14 @@ export function VillageView({ previewToken } = {}) {
       <div className="app-frame">
       <header className="topbar">
         <div>
-          <p className="topbar-kicker">Village Workspace</p>
           <span className="topbar-title">Pancham</span>
           {me && <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>}
+          {me && (me.village_lead_name || me.ngo_name) && (
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-primary-50/75">
+              {me.village_lead_name && <span><span className="text-primary-50/50">Lead</span> {me.village_lead_name}{me.village_lead_phone ? ` · ${me.village_lead_phone}` : ""}</span>}
+              {me.ngo_name && <span><span className="text-primary-50/50">NGO</span> {me.ngo_name}{me.ngo_contact_name ? ` · ${me.ngo_contact_name}` : ""}{me.ngo_contact_phone ? ` (${me.ngo_contact_phone})` : ""}</span>}
+            </div>
+          )}
         </div>
         <div className="hero-panel max-w-sm">
           <p className="eyebrow text-primary-50/70">Field View</p>
@@ -128,7 +133,6 @@ export function VillageView({ previewToken } = {}) {
       {me && (
         <div className="bg-white/55 border-b border-primary-100/60 px-4 pt-4 pb-2 md:px-6">
           <VillageStageTracker stage={me.stage} subStatus={me.sub_status} />
-          <VillageOrgReadOnly village={me} />
         </div>
       )}
 
