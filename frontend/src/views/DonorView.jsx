@@ -44,6 +44,12 @@ export function DonorView() {
               <div className="bg-white rounded-xl border p-5">
                 <h2 className="font-semibold text-lg text-gray-800 mb-1">{selected.name}</h2>
                 <p className="text-sm text-gray-500 mb-4">{selected.district}</p>
+                {(selected.ngo_name || selected.ngo_contact_name || selected.ngo_contact_phone) && (
+                  <div className="mb-4 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+                    <p><span className="font-medium">NGO:</span> {selected.ngo_name || "-"}</p>
+                    <p><span className="font-medium">Contact:</span> {selected.ngo_contact_name || "-"}{selected.ngo_contact_phone ? ` (${selected.ngo_contact_phone})` : ""}</p>
+                  </div>
+                )}
                 <VillageStageTracker stage={selected.stage} subStatus={selected.sub_status} />
               </div>
               {updates.map((u) => (

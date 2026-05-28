@@ -17,6 +17,9 @@ class VillageOut(BaseModel):
     id: str
     name: str
     district: str
+    ngo_name: str | None = None
+    ngo_contact_name: str | None = None
+    ngo_contact_phone: str | None = None
     stage: str
     sub_status: str
 
@@ -53,7 +56,18 @@ async def list_villages(db: AsyncSession = Depends(get_db), _=Depends(donor_acce
     out = []
     for v in villages:
         stage, sub_status = derive_stage_and_substatus(v.internal_status)
-        out.append(VillageOut(id=v.id, name=v.name, district=v.district, stage=stage, sub_status=sub_status))
+        out.append(
+            VillageOut(
+                id=v.id,
+                name=v.name,
+                district=v.district,
+                ngo_name=v.ngo_name,
+                ngo_contact_name=v.ngo_contact_name,
+                ngo_contact_phone=v.ngo_contact_phone,
+                stage=stage,
+                sub_status=sub_status,
+            )
+        )
     return out
 
 

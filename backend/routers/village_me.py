@@ -16,6 +16,9 @@ class VillageMe(BaseModel):
     name: str
     district: str
     taluka: str
+    ngo_name: str | None = None
+    ngo_contact_name: str | None = None
+    ngo_contact_phone: str | None = None
     internal_status: str
     stage: str
     sub_status: str
@@ -31,6 +34,7 @@ async def get_me(db: AsyncSession = Depends(get_db), user=Depends(village_only))
     stage, sub_status = derive_stage_and_substatus(village.internal_status)
     return VillageMe(
         id=village.id, name=village.name, district=village.district, taluka=village.taluka,
+        ngo_name=village.ngo_name, ngo_contact_name=village.ngo_contact_name, ngo_contact_phone=village.ngo_contact_phone,
         internal_status=village.internal_status, stage=stage, sub_status=sub_status,
         bhau_enabled=village.bhau_enabled,
     )

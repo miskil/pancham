@@ -18,6 +18,9 @@ class OnboardRequest(BaseModel):
     district: str
     taluka: str
     population: int | None = None
+    ngo_name: str | None = None
+    ngo_contact_name: str | None = None
+    ngo_contact_phone: str | None = None
     bhau_enabled: bool = False
 
 
@@ -27,6 +30,9 @@ class VillageOut(BaseModel):
     district: str
     taluka: str
     population: int | None
+    ngo_name: str | None = None
+    ngo_contact_name: str | None = None
+    ngo_contact_phone: str | None = None
     login_username: str
     is_active: bool
     bhau_enabled: bool
@@ -47,6 +53,9 @@ def village_to_out(v: Village, temp_password: str | None = None) -> VillageOut:
         district=v.district,
         taluka=v.taluka,
         population=v.population,
+        ngo_name=v.ngo_name,
+        ngo_contact_name=v.ngo_contact_name,
+        ngo_contact_phone=v.ngo_contact_phone,
         login_username=v.login_username,
         is_active=v.is_active,
         bhau_enabled=v.bhau_enabled,
@@ -67,6 +76,9 @@ async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_d
         district=body.district,
         taluka=body.taluka,
         population=body.population,
+        ngo_name=(body.ngo_name or "").strip() or None,
+        ngo_contact_name=(body.ngo_contact_name or "").strip() or None,
+        ngo_contact_phone=(body.ngo_contact_phone or "").strip() or None,
         bhau_enabled=body.bhau_enabled,
         login_username=username,
         login_password_hash=hash_password(temp_password),

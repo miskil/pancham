@@ -209,7 +209,15 @@ function StatCard({ label, value }) {
 
 function OnboardTab({ villageViewEnabled, onPreview }) {
   const [villages, setVillages] = useState([]);
-  const [form, setForm] = useState({ name: "", district: "", taluka: "", population: "" });
+  const [form, setForm] = useState({
+    name: "",
+    district: "",
+    taluka: "",
+    population: "",
+    ngo_name: "",
+    ngo_contact_name: "",
+    ngo_contact_phone: "",
+  });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -230,7 +238,15 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
       const v = await api.onboardVillage({ ...form, population: form.population ? +form.population : null });
       setResult(v);
       setVillages((prev) => [v, ...prev]);
-      setForm({ name: "", district: "", taluka: "", population: "" });
+      setForm({
+        name: "",
+        district: "",
+        taluka: "",
+        population: "",
+        ngo_name: "",
+        ngo_contact_name: "",
+        ngo_contact_phone: "",
+      });
     } catch (err) {
       alert(err.message);
     } finally {
@@ -263,6 +279,30 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
               onChange={(e) => setForm((p) => ({ ...p, population: e.target.value }))}
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.ngo_name}
+              onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.ngo_contact_name}
+              onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.ngo_contact_phone}
+              onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
+            />
+          </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading} className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
               {loading ? "Creating…" : "Create Village"}
@@ -286,6 +326,7 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
           <table className="w-full text-sm">
             <thead><tr className="text-left text-gray-500 border-b">
               <th className="pb-2">Name</th><th className="pb-2">District</th>
+              <th className="pb-2">NGO</th><th className="pb-2">Contact</th>
               <th className="pb-2">Stage</th><th className="pb-2">Active</th>
               {villageViewEnabled && <th className="pb-2"></th>}
             </tr></thead>
@@ -294,6 +335,8 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
                 <tr key={v.id} className="border-b last:border-0">
                   <td className="py-2">{v.name}</td>
                   <td className="py-2 text-gray-500">{v.district}</td>
+                  <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
+                  <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
                   <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
                   <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
                   {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
@@ -309,6 +352,7 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
 
 function ProposalsTab() {
   const [proposals, setProposals] = useState([]);
+  const [villageMeta, setVillageMeta] = useState({});
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
@@ -317,11 +361,16 @@ function ProposalsTab() {
   useEffect(() => {
     setLoading(true);
     setLoadError(null);
+    api.listVillages()
+      .then((items) => setVillageMeta(Object.fromEntries(items.map((v) => [v.id, v]))))
+      .catch(() => {});
     api.listProposals()
       .then(setProposals)
       .catch((err) => setLoadError(err.message || "Failed to load proposals"))
       .finally(() => setLoading(false));
   }, []);
+
+  const selectedVillage = selected ? villageMeta[selected.village_id] : null;
 
   async function act(action) {
     try {
@@ -356,6 +405,7 @@ function ProposalsTab() {
           <div className="bg-white rounded-xl border p-5 space-y-4">
             <VillageStageTracker stage={selected.stage || "PROPOSAL"} subStatus={selected.sub_status} />
             <h2 className="font-semibold">{selected.village_name}</h2>
+            <VillageOrgReadOnly village={selectedVillage} />
             <div className="space-y-2 text-sm">
               {["focus_area", "description", "community_context", "key_activities"].map((f) => selected[f] && (
                 <div key={f}>
@@ -441,12 +491,18 @@ function EvidencePanel({ villageId }) {
 
 function PlansTab() {
   const [plans, setPlans] = useState([]);
+  const [villageMeta, setVillageMeta] = useState({});
   const [selected, setSelected] = useState(null);
   const [draftData, setDraftData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => { api.listPlans().then(setPlans).catch(() => {}); }, []);
+  useEffect(() => {
+    api.listVillages()
+      .then((items) => setVillageMeta(Object.fromEntries(items.map((v) => [v.id, v]))))
+      .catch(() => {});
+    api.listPlans().then(setPlans).catch(() => {});
+  }, []);
 
   function selectPlan(p) {
     setSelected(p);
@@ -518,6 +574,7 @@ function PlansTab() {
                 <ExportDriveButton onExport={() => api.exportPlan(selected.id)} />
               </div>
             </div>
+            <VillageOrgReadOnly village={selected ? villageMeta[selected.village_id] : null} />
             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
             <PlanViewer
               plan={{ plan_data: draftData ?? selected.plan_data }}
@@ -582,9 +639,6 @@ function OrgTab() {
     setSaving(true);
     try {
       await api.updateVillageOrg(villageId, {
-        ngo_name: form.ngo_name,
-        ngo_contact_name: form.ngo_contact_name,
-        ngo_contact_phone: form.ngo_contact_phone,
         ngo_whatsapp_phone: form.ngo_whatsapp_phone,
         vdc_members: form.vdc_members.filter((m) => m.name.trim()),
       });
@@ -637,23 +691,13 @@ function OrgTab() {
                 </div>
               </div>
 
+              <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+                <p><span className="font-medium">NGO:</span> {form.ngo_name || "-"}</p>
+                <p><span className="font-medium">Contact:</span> {form.ngo_contact_name || "-"}{form.ngo_contact_phone ? ` (${form.ngo_contact_phone})` : ""}</p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_name}
-                    onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_name}
-                    onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_phone}
-                    onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))} />
-                </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Phone</label>
                   <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_whatsapp_phone}
                     onChange={(e) => setForm((p) => ({ ...p, ngo_whatsapp_phone: e.target.value }))}
@@ -738,6 +782,7 @@ function StatusTab() {
 
       {villageId && (
         <div className="overflow-y-auto max-h-[calc(100vh-220px)] space-y-4 pr-1">
+          <VillageOrgReadOnly village={villages.find((v) => v.id === villageId)} />
           {loading && <p className="text-sm text-gray-400 text-center py-6">Loading…</p>}
           {!loading && updates.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-6">No status posts from this village yet.</p>
@@ -786,6 +831,18 @@ function StatusTab() {
           Select a village to view status updates.
         </div>
       )}
+    </div>
+  );
+}
+
+function VillageOrgReadOnly({ village }) {
+  if (!village) return null;
+  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone;
+  if (!hasOrg) return null;
+  return (
+    <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+      <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
+      <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
     </div>
   );
 }

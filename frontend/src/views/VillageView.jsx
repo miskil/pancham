@@ -120,6 +120,7 @@ export function VillageView({ previewToken } = {}) {
       {me && (
         <div className="bg-white border-b px-4 pt-4 pb-2">
           <VillageStageTracker stage={me.stage} subStatus={me.sub_status} />
+          <VillageOrgReadOnly village={me} />
         </div>
       )}
 
@@ -413,9 +414,6 @@ function OrgTab({ api }) {
     setSaving(true);
     try {
       await api.updateOrg({
-        ngo_name: form.ngo_name,
-        ngo_contact_name: form.ngo_contact_name,
-        ngo_contact_phone: form.ngo_contact_phone,
         ngo_whatsapp_phone: form.ngo_whatsapp_phone,
         vdc_members: form.vdc_members.filter((m) => m.name.trim()),
       });
@@ -450,23 +448,13 @@ function OrgTab({ api }) {
         </div>
       </div>
 
+      <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+        <p><span className="font-medium">NGO:</span> {form.ngo_name || "-"}</p>
+        <p><span className="font-medium">Contact:</span> {form.ngo_contact_name || "-"}{form.ngo_contact_phone ? ` (${form.ngo_contact_phone})` : ""}</p>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
-          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_name}
-            onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
-          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_name}
-            onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
-          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_phone}
-            onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))} />
-        </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Phone</label>
           <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_whatsapp_phone}
             onChange={(e) => setForm((p) => ({ ...p, ngo_whatsapp_phone: e.target.value }))}
@@ -644,6 +632,18 @@ function EvidenceTab({ api }) {
       {docs.length === 0 && (
         <p className="text-sm text-gray-400 text-center py-4">No documents uploaded yet.</p>
       )}
+    </div>
+  );
+}
+
+function VillageOrgReadOnly({ village }) {
+  if (!village) return null;
+  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone;
+  if (!hasOrg) return null;
+  return (
+    <div className="mt-3 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+      <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
+      <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
     </div>
   );
 }
