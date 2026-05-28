@@ -355,29 +355,67 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
         {villages.length === 0 ? (
           <p className="text-sm text-gray-400">No villages yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-500 border-b">
-              <th className="pb-2">Name</th><th className="pb-2">District</th>
-              <th className="pb-2">NGO</th><th className="pb-2">NGO Contact</th>
-              <th className="pb-2">Village Lead</th>
-              <th className="pb-2">Stage</th><th className="pb-2">Active</th>
-              {villageViewEnabled && <th className="pb-2"></th>}
-            </tr></thead>
-            <tbody>
+          <>
+            <div className="space-y-3 md:hidden">
               {villages.map((v) => (
-                <tr key={v.id} className="border-b last:border-0">
-                  <td className="py-2">{v.name}</td>
-                  <td className="py-2 text-gray-500">{v.district}</td>
-                  <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
-                  <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
-                  <td className="py-2 text-gray-600">{v.village_lead_name || v.village_lead_phone || "-"}</td>
-                  <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
-                  <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
-                  {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
-                </tr>
+                <div key={v.id} className="rounded-xl border bg-white p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 break-words">{v.name}</p>
+                      <p className="text-sm text-gray-500 break-words">{v.district}</p>
+                    </div>
+                    <span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5 shrink-0">{v.stage}</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 text-sm text-gray-700">
+                    <p><span className="text-gray-500">NGO:</span> {v.ngo_name || "-"}</p>
+                    <p><span className="text-gray-500">NGO Contact:</span> {v.ngo_contact_name || v.ngo_contact_phone || "-"}</p>
+                    <p><span className="text-gray-500">Village Lead:</span> {v.village_lead_name || v.village_lead_phone || "-"}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span className="text-gray-500">Active:</span>
+                    {v.is_active ? (
+                      <span className="text-green-700">✓</span>
+                    ) : (
+                      <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">
+                        Deactivate
+                      </button>
+                    )}
+                    {villageViewEnabled && (
+                      <button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">
+                        View as Village
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm min-w-[760px]">
+                <thead><tr className="text-left text-gray-500 border-b">
+                  <th className="pb-2">Name</th><th className="pb-2">District</th>
+                  <th className="pb-2">NGO</th><th className="pb-2">NGO Contact</th>
+                  <th className="pb-2">Village Lead</th>
+                  <th className="pb-2">Stage</th><th className="pb-2">Active</th>
+                  {villageViewEnabled && <th className="pb-2"></th>}
+                </tr></thead>
+                <tbody>
+                  {villages.map((v) => (
+                    <tr key={v.id} className="border-b last:border-0">
+                      <td className="py-2">{v.name}</td>
+                      <td className="py-2 text-gray-500">{v.district}</td>
+                      <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
+                      <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
+                      <td className="py-2 text-gray-600">{v.village_lead_name || v.village_lead_phone || "-"}</td>
+                      <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
+                      <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
+                      {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
