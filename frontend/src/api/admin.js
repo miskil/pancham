@@ -1,10 +1,12 @@
-import { get, post, patch } from "./client";
+import { get, post, patch, download } from "./client";
 
 export const listVillages = () => get("/admin/villages");
 export const getPreviewToken = (id) => post(`/admin/villages/${id}/preview-token`);
 export const onboardVillage = (body) => post("/admin/villages", body);
 export const deactivateVillage = (id) => patch(`/admin/villages/${id}/deactivate`);
 export const getVillageEvidence = (id) => get(`/admin/villages/${id}/evidence`);
+export const getVillageOrg = (id) => get(`/admin/villages/${id}/org`);
+export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`, body);
 
 export const listProposals = () => get("/admin/proposals");
 export const getProposal = (id) => get(`/admin/proposals/${id}`);
@@ -21,7 +23,7 @@ export const acceptPlan = (id) => patch(`/admin/plans/${id}/accept`);
 
 export const listStatusUpdates = (villageId) => get(`/admin/status-updates${villageId ? `?village_id=${villageId}` : ""}`);
 
-export const exportProposal = (id) => post(`/admin/export/proposals/${id}`);
-export const exportPlan = (id) => post(`/admin/export/plans/${id}`);
+export const exportProposal = (id) => download(`/admin/export/proposals/${id}`, "POST");
+export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");
 export const publishUpdate = (id) => patch(`/admin/status-updates/${id}/publish`);
 export const unpublishUpdate = (id) => patch(`/admin/status-updates/${id}/unpublish`);

@@ -1,6 +1,8 @@
-import { get, post, patch, del, postForm } from "./client";
+import { get, post, patch, del, postForm, download } from "./client";
 
 export const getMe = () => get("/village/me");
+export const getOrg = () => get("/village/org");
+export const updateOrg = (body) => patch("/village/org", body);
 
 export const getProposal = () => get("/village/proposal");
 export const createProposal = (body) => post("/village/proposal", body);
@@ -25,3 +27,6 @@ export const uploadMedia = (updateId, formData) => postForm(`/village/status/${u
 export const listEvidence = () => get("/village/evidence");
 export const uploadEvidence = (formData) => postForm("/village/evidence", formData);
 export const deleteEvidence = (id) => del(`/village/evidence/${id}`);
+
+export const exportProposal = (id) => download(`/admin/export/proposals/${id}`, "POST");
+export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");

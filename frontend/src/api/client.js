@@ -30,6 +30,32 @@ export const post = (path, body) => apiFetch(path, { method: "POST", body: JSON.
 export const patch = (path, body) => apiFetch(path, { method: "PATCH", body: JSON.stringify(body) });
 export const del = (path) => apiFetch(path, { method: "DELETE" });
 
+export async function download(path, method = "POST") {
+  const token = getToken();
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}${path}`, { method, headers });
+
+  if (res.status === 401) {
+    clearAuth();
+    window.location.hash = "#/login";
+    throw new Error("Unauthorized");
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Request failed");
+  }
+
+  const blob = await res.blob();
+  const cd = res.headers.get("content-disposition") || "";
+  const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+  const plainMatch = cd.match(/filename="?([^";]+)"?/i);
+  const filename = decodeURIComponent((utf8Match && utf8Match[1]) || (plainMatch && plainMatch[1]) || "export.docx");
+  return { blob, filename };
+}
+
 export async function postForm(path, formData) {
   const token = getToken();
   const headers = {};

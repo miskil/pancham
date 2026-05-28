@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export
 from .routers import village_me, village_proposal, village_plan, village_status, village_evidence
-from .routers import threads, channels, donor
+from .routers import threads, channels, donor, org
 
 app = FastAPI(title="Pancham API")
 
@@ -48,6 +48,7 @@ for r in [
     village_plan.router,
     village_status.router,
     village_evidence.router,
+    org.router,
     threads.router,
     channels.router,
     donor.router,

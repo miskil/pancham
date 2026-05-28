@@ -7,13 +7,41 @@ import { VillageChannel } from "../components/VillageChannel";
 import { PlanViewer } from "../components/PlanViewer";
 import { RichText } from "../components/RichText";
 
-const TABS = ["Proposal", "Evidence", "Project", "Status"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Project", "Status"];
+const STAGE_PROGRESS = {
+  PROPOSAL: 25,
+  PLAN: 50,
+  ACTIVE: 75,
+  COMPLETED: 100,
+};
+
+function stageProgress(stage) {
+  return STAGE_PROGRESS[stage] ?? 0;
+}
 
 function makeApi(token) {
   if (!token) return baseApi;
   const f = (path, opts = {}) => apiFetch(path, { ...opts, headers: { Authorization: `Bearer ${token}`, ...opts.headers } });
+  const dl = async (path, method = "POST") => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || "Request failed");
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get("content-disposition") || "";
+    const utf8Match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+    const plainMatch = cd.match(/filename="?([^";]+)"?/i);
+    const filename = decodeURIComponent((utf8Match && utf8Match[1]) || (plainMatch && plainMatch[1]) || "export.docx");
+    return { blob, filename };
+  };
   return {
     getMe: () => f("/village/me"),
+    getOrg: () => f("/village/org"),
+    updateOrg: (b) => f("/village/org", { method: "PATCH", body: JSON.stringify(b) }),
     getProposal: () => f("/village/proposal"),
     createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
@@ -39,12 +67,43 @@ function makeApi(token) {
         .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
     },
     deleteEvidence: (id) => f(`/village/evidence/${id}`, { method: "DELETE" }),
+    exportProposal: (id) => dl(`/admin/export/proposals/${id}`, "POST"),
+    exportPlan: (id) => dl(`/admin/export/plans/${id}`, "POST"),
   };
+}
+
+function ExportDocxButton({ onExport }) {
+  const [loading, setLoading] = useState(false);
+
+  async function run() {
+    setLoading(true);
+    try {
+      const { blob, filename } = await onExport();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Export failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button onClick={run} disabled={loading} className="btn-sm bg-gray-700 disabled:opacity-60">
+      {loading ? "Exporting..." : "Export DOCX"}
+    </button>
+  );
 }
 
 export function VillageView({ previewToken } = {}) {
   const api = useMemo(() => makeApi(previewToken), [previewToken]);
-  const [tab, setTab] = useState("Proposal");
+  const [tab, setTab] = useState("Dashboard");
   const [me, setMe] = useState(null);
 
   useEffect(() => { api.getMe().then(setMe).catch(() => {}); }, [api]);
@@ -83,11 +142,94 @@ export function VillageView({ previewToken } = {}) {
       </div>
 
       <div className="p-4 max-w-2xl mx-auto">
+        {tab === "Dashboard" && <DashboardTab me={me} api={api} />}
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
+        {tab === "Org" && <OrgTab api={api} />}
         {tab === "Project" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
       </div>
+    </div>
+  );
+}
+
+function DashboardTab({ me, api }) {
+  const [loading, setLoading] = useState(true);
+  const [proposal, setProposal] = useState(null);
+  const [baseline, setBaseline] = useState(null);
+  const [wip, setWip] = useState(null);
+  const [updates, setUpdates] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      api.getProposal().catch(() => null),
+      api.getBaseline().catch(() => null),
+      api.getWip().catch(() => null),
+      api.listUpdates().catch(() => []),
+    ]).then(([proposalData, baselineData, wipData, updatesData]) => {
+      if (!mounted) return;
+      setProposal(proposalData);
+      setBaseline(baselineData);
+      setWip(wipData);
+      setUpdates(updatesData);
+      setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [api]);
+
+  if (!me || loading) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading dashboard...</div>;
+  }
+
+  const progress = stageProgress(me.stage);
+  const publishedCount = updates.filter((u) => u.is_published).length;
+  const currentPlan = wip || baseline;
+  const planRows = currentPlan
+    ? Object.values(currentPlan.plan_data || {}).flatMap((yearRows) => Array.isArray(yearRows) ? yearRows : [])
+    : [];
+  const filledRows = planRows.filter((r) => (r.details || r.poc || r.amount)).length;
+  const planFillPercent = planRows.length ? Math.round((filledRows / planRows.length) * 100) : 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-gray-700">Village Progress</h2>
+          <span className="text-sm text-primary-700 font-semibold">{progress}%</span>
+        </div>
+        <div className="h-3 rounded bg-gray-100 overflow-hidden">
+          <div className="h-full bg-primary-600" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">{me.stage} • {me.sub_status}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="Proposal" value={proposal?.status || "Not started"} />
+        <StatCard label="Plan" value={baseline?.status || "Not submitted"} />
+        <StatCard label="Plan Filled" value={`${planFillPercent}%`} />
+        <StatCard label="Updates Published" value={`${publishedCount}/${updates.length}`} />
+      </div>
+
+      <div className="bg-white rounded-xl border p-5">
+        <h3 className="font-medium text-gray-700 mb-3">Checklist</h3>
+        <ul className="space-y-2 text-sm text-gray-700">
+          <li>{proposal ? "✓" : "○"} Proposal created</li>
+          <li>{proposal?.status === "ACCEPTED" ? "✓" : "○"} Proposal accepted by admin</li>
+          <li>{baseline ? "✓" : "○"} Baseline plan submitted</li>
+          <li>{baseline?.status === "FROZEN" ? "✓" : "○"} Baseline plan accepted and frozen</li>
+          <li>{updates.length > 0 ? "✓" : "○"} At least one status update posted</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-base font-semibold text-gray-800 mt-1">{value}</p>
     </div>
   );
 }
@@ -146,11 +288,14 @@ function ProposalTab({ me, onUpdate, api }) {
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-gray-700">Village Proposal</h2>
-        {proposal && (
-          <span className={`text-xs font-medium rounded-full px-3 py-1 ${STATUS_LABELS[proposal.status]?.color}`}>
-            {STATUS_LABELS[proposal.status]?.label ?? proposal.status}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {proposal && <ExportDocxButton onExport={() => api.exportProposal(proposal.id)} />}
+          {proposal && (
+            <span className={`text-xs font-medium rounded-full px-3 py-1 ${STATUS_LABELS[proposal.status]?.color}`}>
+              {STATUS_LABELS[proposal.status]?.label ?? proposal.status}
+            </span>
+          )}
+        </div>
       </div>
 
       {proposal?.reviewer_notes && (
@@ -196,6 +341,138 @@ function ProposalTab({ me, onUpdate, api }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function OrgTab({ api }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    ngo_name: "",
+    ngo_contact_name: "",
+    ngo_contact_phone: "",
+    ngo_whatsapp_phone: "",
+    vdc_members: Array.from({ length: 5 }, () => ({ name: "", role: "", phone: "" })),
+  });
+
+  useEffect(() => {
+    api.getOrg().then((data) => {
+      const members = [...(data.vdc_members || [])]
+        .slice(0, 5)
+        .map((m) => ({ name: m.name || "", role: m.role || "", phone: m.phone || "" }));
+      while (members.length < 5) members.push({ name: "", role: "", phone: "" });
+      setForm({
+        ngo_name: data.ngo_name || "",
+        ngo_contact_name: data.ngo_contact_name || "",
+        ngo_contact_phone: data.ngo_contact_phone || "",
+        ngo_whatsapp_phone: data.ngo_whatsapp_phone || "",
+        vdc_members: members,
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [api]);
+
+  function updateMember(i, key, value) {
+    setForm((prev) => {
+      const next = [...prev.vdc_members];
+      next[i] = { ...next[i], [key]: value };
+      return { ...prev, vdc_members: next };
+    });
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await api.updateOrg({
+        ngo_name: form.ngo_name,
+        ngo_contact_name: form.ngo_contact_name,
+        ngo_contact_phone: form.ngo_contact_phone,
+        ngo_whatsapp_phone: form.ngo_whatsapp_phone,
+        vdc_members: form.vdc_members.filter((m) => m.name.trim()),
+      });
+      alert("Org details saved");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const waNumber = (form.ngo_whatsapp_phone || "").replace(/[^\d]/g, "");
+  const waLink = waNumber ? `https://wa.me/${waNumber}` : "";
+
+  if (loading) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading org details…</div>;
+  }
+
+  return (
+    <div className="bg-white rounded-xl border p-5 space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-gray-700">Organization</h2>
+        <div className="flex items-center gap-2">
+          {waLink && (
+            <a href={waLink} target="_blank" rel="noopener noreferrer" className="btn-sm bg-green-600">
+              WhatsApp NGO
+            </a>
+          )}
+          <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_name}
+            onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
+          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_name}
+            onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
+          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_phone}
+            onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Phone</label>
+          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_whatsapp_phone}
+            onChange={(e) => setForm((p) => ({ ...p, ngo_whatsapp_phone: e.target.value }))}
+            placeholder="e.g. 919876543210"
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">VDC Members (up to 5)</h3>
+        <div className="space-y-2">
+          {form.vdc_members.map((m, i) => (
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input
+                className="border rounded px-3 py-2 text-sm"
+                placeholder={`Member ${i + 1} Name`}
+                value={m.name}
+                onChange={(e) => updateMember(i, "name", e.target.value)}
+              />
+              <input
+                className="border rounded px-3 py-2 text-sm"
+                placeholder="Role"
+                value={m.role}
+                onChange={(e) => updateMember(i, "role", e.target.value)}
+              />
+              <input
+                className="border rounded px-3 py-2 text-sm"
+                placeholder="Phone"
+                value={m.phone}
+                onChange={(e) => updateMember(i, "phone", e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -396,6 +673,7 @@ function ProjectTab({ me, api }) {
 
   const frozen = baseline.status === "FROZEN";
   const currentWipData = draftData ?? wip?.plan_data;
+  const exportPlanId = wip?.id || baseline?.id;
 
   return (
     <div className="space-y-4">
@@ -415,6 +693,12 @@ function ProjectTab({ me, api }) {
           WIP
         </button>
       </div>
+
+      {exportPlanId && (
+        <div>
+          <ExportDocxButton onExport={() => api.exportPlan(exportPlanId)} />
+        </div>
+      )}
 
       {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
 

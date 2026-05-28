@@ -7,18 +7,34 @@ import { PlanViewer } from "../components/PlanViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
-const TABS = ["Onboard", "Proposals", "Plans", "Status"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Org"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
+const STAGE_PROGRESS = {
+  PROPOSAL: 25,
+  PLAN: 50,
+  ACTIVE: 75,
+  COMPLETED: 100,
+};
+
+function stageProgress(stage) {
+  return STAGE_PROGRESS[stage] ?? 0;
+}
 
 function ExportDriveButton({ onExport }) {
   const [state, setState] = useState("idle"); // idle | loading | done | error
-  const [link, setLink] = useState(null);
 
   async function handleClick() {
     setState("loading");
     try {
-      const result = await onExport();
-      setLink(result.web_view_link);
+      const { blob, filename } = await onExport();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       setState("done");
     } catch (err) {
       setState("error");
@@ -26,24 +42,16 @@ function ExportDriveButton({ onExport }) {
     }
   }
 
-  if (state === "done" && link) {
-    return (
-      <a href={link} target="_blank" rel="noopener noreferrer"
-        className="btn-sm bg-green-700 inline-flex items-center gap-1">
-        ✓ Open in Drive
-      </a>
-    );
-  }
   return (
     <button onClick={handleClick} disabled={state === "loading"}
       className="btn-sm bg-gray-700 disabled:opacity-50">
-      {state === "loading" ? "Exporting…" : "Export to Drive"}
+      {state === "loading" ? "Exporting…" : "Export DOCX"}
     </button>
   );
 }
 
 export function AdminView() {
-  const [tab, setTab] = useState("Onboard");
+  const [tab, setTab] = useState("Dashboard");
   const [preview, setPreview] = useState(null); // { token, village_name }
 
   if (preview) {
@@ -78,11 +86,123 @@ export function AdminView() {
         ))}
       </div>
       <div className="p-4 max-w-4xl mx-auto">
+        {tab === "Dashboard" && <DashboardTab />}
         {tab === "Onboard" && <OnboardTab villageViewEnabled={VILLAGE_VIEW_ENABLED} onPreview={setPreview} />}
         {tab === "Proposals" && <ProposalsTab />}
         {tab === "Plans" && <PlansTab />}
         {tab === "Status" && <StatusTab />}
+        {tab === "Org" && <OrgTab />}
       </div>
+    </div>
+  );
+}
+
+function DashboardTab() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ villages: [], proposals: [], plans: [], updates: [] });
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      api.listVillages().catch(() => []),
+      api.listProposals().catch(() => []),
+      api.listPlans().catch(() => []),
+      api.listStatusUpdates().catch(() => []),
+    ]).then(([villages, proposals, plans, updates]) => {
+      if (!mounted) return;
+      setData({ villages, proposals, plans, updates });
+      setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading dashboard...</div>;
+  }
+
+  const { villages, proposals, plans, updates } = data;
+  const total = villages.length;
+  const active = villages.filter((v) => v.is_active).length;
+  const completed = villages.filter((v) => v.stage === "COMPLETED").length;
+  const avgProgress = total ? Math.round(villages.reduce((sum, v) => sum + stageProgress(v.stage), 0) / total) : 0;
+  const proposalReviewQueue = proposals.filter((p) => ["SUBMITTED", "AMENDED", "UNDER_REVIEW"].includes(p.status)).length;
+  const planReviewQueue = plans.filter((p) => p.status === "SUBMITTED").length;
+  const publishedUpdates = updates.filter((u) => u.is_published).length;
+  const stageCounts = {
+    PROPOSAL: villages.filter((v) => v.stage === "PROPOSAL").length,
+    PLAN: villages.filter((v) => v.stage === "PLAN").length,
+    ACTIVE: villages.filter((v) => v.stage === "ACTIVE").length,
+    COMPLETED: villages.filter((v) => v.stage === "COMPLETED").length,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Total Villages" value={String(total)} />
+        <StatCard label="Active Accounts" value={String(active)} />
+        <StatCard label="Avg Progress" value={`${avgProgress}%`} />
+        <StatCard label="Completed" value={String(completed)} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <StatCard label="Proposal Review Queue" value={String(proposalReviewQueue)} />
+        <StatCard label="Plan Review Queue" value={String(planReviewQueue)} />
+        <StatCard label="Published Updates" value={`${publishedUpdates}/${updates.length}`} />
+      </div>
+
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-700 mb-3">Village Stage Distribution</h2>
+        <div className="space-y-2">
+          {Object.entries(stageCounts).map(([stage, count]) => (
+            <div key={stage}>
+              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <span>{stage}</span>
+                <span>{count}</span>
+              </div>
+              <div className="h-2 rounded bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full bg-primary-600"
+                  style={{ width: `${total ? Math.round((count / total) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-700 mb-3">Progress by Village</h2>
+        {villages.length === 0 ? (
+          <p className="text-sm text-gray-400">No villages available.</p>
+        ) : (
+          <div className="space-y-2">
+            {villages.map((v) => {
+              const pct = stageProgress(v.stage);
+              return (
+                <div key={v.id} className="border rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-700">{v.name}</span>
+                    <span className="text-gray-500">{v.stage} • {pct}%</span>
+                  </div>
+                  <div className="h-2 rounded bg-gray-100 mt-2 overflow-hidden">
+                    <div className="h-full bg-primary-600" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{v.sub_status || "No sub-status"}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-2xl font-semibold text-gray-800 mt-1">{value}</p>
     </div>
   );
 }
@@ -396,6 +516,172 @@ function PlansTab() {
           </div>
         ) : <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Select a plan.</div>}
       </div>
+    </div>
+  );
+}
+
+function OrgTab() {
+  const [villages, setVillages] = useState([]);
+  const [villageId, setVillageId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    ngo_name: "",
+    ngo_contact_name: "",
+    ngo_contact_phone: "",
+    ngo_whatsapp_phone: "",
+    vdc_members: Array.from({ length: 5 }, () => ({ name: "", role: "", phone: "" })),
+  });
+
+  useEffect(() => {
+    api.listVillages().then((data) => {
+      setVillages(data);
+      if (data.length) setVillageId(data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!villageId) return;
+    setLoading(true);
+    api.getVillageOrg(villageId).then((data) => {
+      const members = [...(data.vdc_members || [])]
+        .slice(0, 5)
+        .map((m) => ({ name: m.name || "", role: m.role || "", phone: m.phone || "" }));
+      while (members.length < 5) members.push({ name: "", role: "", phone: "" });
+      setForm({
+        ngo_name: data.ngo_name || "",
+        ngo_contact_name: data.ngo_contact_name || "",
+        ngo_contact_phone: data.ngo_contact_phone || "",
+        ngo_whatsapp_phone: data.ngo_whatsapp_phone || "",
+        vdc_members: members,
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [villageId]);
+
+  function updateMember(i, key, value) {
+    setForm((prev) => {
+      const next = [...prev.vdc_members];
+      next[i] = { ...next[i], [key]: value };
+      return { ...prev, vdc_members: next };
+    });
+  }
+
+  async function save() {
+    if (!villageId) return;
+    setSaving(true);
+    try {
+      await api.updateVillageOrg(villageId, {
+        ngo_name: form.ngo_name,
+        ngo_contact_name: form.ngo_contact_name,
+        ngo_contact_phone: form.ngo_contact_phone,
+        ngo_whatsapp_phone: form.ngo_whatsapp_phone,
+        vdc_members: form.vdc_members.filter((m) => m.name.trim()),
+      });
+      alert("Org details saved");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const waNumber = (form.ngo_whatsapp_phone || "").replace(/[^\d]/g, "");
+  const waLink = waNumber ? `https://wa.me/${waNumber}` : "";
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-600 whitespace-nowrap">Village</label>
+        <select
+          className="flex-1 border rounded px-3 py-2 text-sm"
+          value={villageId}
+          onChange={(e) => setVillageId(e.target.value)}
+        >
+          {villages.map((v) => (
+            <option key={v.id} value={v.id}>{v.name} ({v.district})</option>
+          ))}
+        </select>
+      </div>
+
+      {!villageId && (
+        <div className="bg-white rounded-xl border p-8 text-sm text-gray-400">No villages available.</div>
+      )}
+
+      {villageId && (
+        <div className="bg-white rounded-xl border p-5 space-y-5">
+          {loading && <p className="text-sm text-gray-400">Loading org details...</p>}
+          {!loading && (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-700">Organization</h2>
+                <div className="flex items-center gap-2">
+                  {waLink && (
+                    <a href={waLink} target="_blank" rel="noopener noreferrer" className="btn-sm bg-green-600">
+                      WhatsApp NGO
+                    </a>
+                  )}
+                  <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_name}
+                    onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_name}
+                    onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_contact_phone}
+                    onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Phone</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_whatsapp_phone}
+                    onChange={(e) => setForm((p) => ({ ...p, ngo_whatsapp_phone: e.target.value }))}
+                    placeholder="e.g. 919876543210"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">VDC Members (up to 5)</h3>
+                <div className="space-y-2">
+                  {form.vdc_members.map((m, i) => (
+                    <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        className="border rounded px-3 py-2 text-sm"
+                        placeholder={`Member ${i + 1} Name`}
+                        value={m.name}
+                        onChange={(e) => updateMember(i, "name", e.target.value)}
+                      />
+                      <input
+                        className="border rounded px-3 py-2 text-sm"
+                        placeholder="Role"
+                        value={m.role}
+                        onChange={(e) => updateMember(i, "role", e.target.value)}
+                      />
+                      <input
+                        className="border rounded px-3 py-2 text-sm"
+                        placeholder="Phone"
+                        value={m.phone}
+                        onChange={(e) => updateMember(i, "phone", e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

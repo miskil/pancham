@@ -1,23 +1,20 @@
 import io
-import os
 from datetime import date
-import logging
 
 from docx import Document
 from docx.shared import Pt
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import admin_only
+from ..auth import get_current_user
 from ..db import get_db
 from ..models.plan import ProjectPlan
 from ..models.proposal import Proposal
 from ..models.village import Village
-from ..utils.drive import upload_docx
 
 router = APIRouter(prefix="/admin/export", tags=["admin-export"])
-logger = logging.getLogger(__name__)
 
 
 def _docx_bytes(doc: Document) -> bytes:
@@ -44,18 +41,19 @@ def _row(doc: Document, label: str, value: str):
 async def export_proposal(
     proposal_id: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(admin_only),
+    user: dict = Depends(get_current_user),
 ):
-    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
-    if not folder_id:
-        raise HTTPException(status_code=500, detail="GOOGLE_DRIVE_FOLDER_ID is not configured")
-
     result = await db.execute(
         select(Proposal).where(Proposal.id == proposal_id)
     )
     proposal = result.scalar_one_or_none()
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
+
+    if user["role"] not in ["ADMIN", "VILLAGE"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    if user["role"] == "VILLAGE" and user.get("village_id") != proposal.village_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     village = await db.get(Village, proposal.village_id)
 
@@ -88,12 +86,13 @@ async def export_proposal(
         doc.add_paragraph(proposal.reviewer_notes)
 
     filename = f"Proposal_{village.name if village else proposal.village_id}_{date.today()}.docx"
-    try:
-        result = upload_docx(filename, _docx_bytes(doc), folder_id)
-    except Exception as exc:
-        logger.exception("Proposal export failed", extra={"proposal_id": proposal_id})
-        raise HTTPException(status_code=500, detail=f"Drive export failed: {str(exc)}")
-    return {"filename": filename, **result}
+    content = _docx_bytes(doc)
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers=headers,
+    )
 
 
 # ── Plan export ───────────────────────────────────────────────────────────────
@@ -102,18 +101,19 @@ async def export_proposal(
 async def export_plan(
     plan_id: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(admin_only),
+    user: dict = Depends(get_current_user),
 ):
-    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
-    if not folder_id:
-        raise HTTPException(status_code=500, detail="GOOGLE_DRIVE_FOLDER_ID is not configured")
-
     result = await db.execute(
         select(ProjectPlan).where(ProjectPlan.id == plan_id)
     )
     plan = result.scalar_one_or_none()
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
+
+    if user["role"] not in ["ADMIN", "VILLAGE"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    if user["role"] == "VILLAGE" and user.get("village_id") != plan.village_id:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     village = await db.get(Village, plan.village_id)
 
@@ -154,9 +154,10 @@ async def export_plan(
         doc.add_paragraph()
 
     filename = f"Plan_{plan.version_type}_{village.name if village else plan.village_id}_{date.today()}.docx"
-    try:
-        result = upload_docx(filename, _docx_bytes(doc), folder_id)
-    except Exception as exc:
-        logger.exception("Plan export failed", extra={"plan_id": plan_id})
-        raise HTTPException(status_code=500, detail=f"Drive export failed: {str(exc)}")
-    return {"filename": filename, **result}
+    content = _docx_bytes(doc)
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers=headers,
+    )
