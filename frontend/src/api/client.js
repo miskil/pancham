@@ -13,7 +13,10 @@ async function fetchWithFallback(path, options) {
       lastError = err;
     }
   }
-  throw lastError || new Error("Failed to fetch");
+  const origin = typeof window !== "undefined" ? window.location.origin : "unknown-origin";
+  const attempted = BASES.join(", ");
+  const reason = lastError?.message || "Failed to fetch";
+  throw new Error(`Network/CORS error from ${origin} to [${attempted}]: ${reason}`);
 }
 
 export async function apiFetch(path, options = {}) {
