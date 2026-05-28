@@ -424,12 +424,12 @@ function ProposalsTab() {
           <button
             key={p.id}
             onClick={() => { setSelected(p); setNotes(""); }}
-            className={`w-full text-left p-3 rounded-lg border text-sm
+            className={`w-full min-w-0 text-left p-3 rounded-lg border text-sm
               ${selected?.id === p.id ? "border-primary-600 bg-primary-50" : "bg-white hover:bg-gray-50"}
             `}
           >
-            <p className="font-medium">{p.village_name}</p>
-            <p className="text-xs text-gray-500">{p.status}</p>
+            <p className="font-medium break-words whitespace-normal">{p.village_name}</p>
+            <p className="text-xs text-gray-500 break-words whitespace-normal">{p.status}</p>
           </button>
         ))}
         {!loading && !loadError && proposals.length === 0 && <p className="text-sm text-gray-400">No proposals yet.</p>}
