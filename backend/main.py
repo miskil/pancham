@@ -14,6 +14,8 @@ def _cors_origins() -> list[str]:
     if raw:
         return [x.strip() for x in raw.split(",") if x.strip()]
     return [
+        "https://pancham.up.railway.app",
+        "https://pancham-frontend.up.railway.app",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
