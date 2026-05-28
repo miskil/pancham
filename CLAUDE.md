@@ -405,7 +405,7 @@ STORAGE_BUCKET=pancham-media
 STORAGE_URL=https://...
 BHAU_API_URL=https://bhau.railway.app
 BHAU_ENABLED=false
-VITE_API_URL=https://pancham-api.railway.app
+VITE_API_URL=https://pancham-server.up.railway.app
 VITE_BHAU_ENABLED=false
 ```
 
