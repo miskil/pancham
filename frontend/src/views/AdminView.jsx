@@ -311,8 +311,17 @@ function ProposalsTab() {
   const [proposals, setProposals] = useState([]);
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => { api.listProposals().then(setProposals).catch(() => {}); }, []);
+  useEffect(() => {
+    setLoading(true);
+    setLoadError(null);
+    api.listProposals()
+      .then(setProposals)
+      .catch((err) => setLoadError(err.message || "Failed to load proposals"))
+      .finally(() => setLoading(false));
+  }, []);
 
   async function act(action) {
     try {
@@ -326,6 +335,8 @@ function ProposalsTab() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="md:col-span-1 space-y-2">
+        {loading && <p className="text-sm text-gray-400">Loading proposals...</p>}
+        {loadError && <p className="text-sm text-red-600">Could not load proposals: {loadError}</p>}
         {proposals.map((p) => (
           <button
             key={p.id}
@@ -338,7 +349,7 @@ function ProposalsTab() {
             <p className="text-xs text-gray-500">{p.status}</p>
           </button>
         ))}
-        {proposals.length === 0 && <p className="text-sm text-gray-400">No proposals yet.</p>}
+        {!loading && !loadError && proposals.length === 0 && <p className="text-sm text-gray-400">No proposals yet.</p>}
       </div>
       <div className="md:col-span-2">
         {selected ? (
