@@ -20,9 +20,14 @@ def _cors_origins() -> list[str]:
         "http://127.0.0.1:5173",
     ]
 
+
+def _cors_origin_regex() -> str:
+    return os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.railway\.app")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
