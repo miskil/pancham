@@ -22,6 +22,8 @@ class OrgProfileIn(BaseModel):
     ngo_name: str | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
+    village_lead_name: str | None = None
+    village_lead_phone: str | None = None
     ngo_whatsapp_phone: str | None = None
     vdc_members: list[VdcMember] | None = None
 
@@ -87,6 +89,10 @@ async def update_village_org(
         village.ngo_contact_name = body.ngo_contact_name.strip() or None
     if body.ngo_contact_phone is not None:
         village.ngo_contact_phone = body.ngo_contact_phone.strip() or None
+    if body.village_lead_name is not None:
+        village.village_lead_name = body.village_lead_name.strip() or None
+    if body.village_lead_phone is not None:
+        village.village_lead_phone = body.village_lead_phone.strip() or None
     if body.ngo_whatsapp_phone is not None:
         village.ngo_whatsapp_phone = body.ngo_whatsapp_phone.strip() or None
     if body.vdc_members is not None:
@@ -138,6 +144,10 @@ async def update_admin_village_org(
         village.ngo_contact_name = body.ngo_contact_name.strip() or None
     if body.ngo_contact_phone is not None:
         village.ngo_contact_phone = body.ngo_contact_phone.strip() or None
+    if body.village_lead_name is not None:
+        village.village_lead_name = body.village_lead_name.strip() or None
+    if body.village_lead_phone is not None:
+        village.village_lead_phone = body.village_lead_phone.strip() or None
     if body.ngo_whatsapp_phone is not None:
         village.ngo_whatsapp_phone = body.ngo_whatsapp_phone.strip() or None
     if body.vdc_members is not None:
