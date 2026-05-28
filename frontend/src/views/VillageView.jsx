@@ -467,6 +467,23 @@ function OrgTab({ api }) {
 
       <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700 space-y-3">
         <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="Lead name"
+              value={form.village_lead_name}
+              onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
+            />
+            <input
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="Lead contact"
+              value={form.village_lead_phone}
+              onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
+            />
+          </div>
+        </div>
+        <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">NGO</label>
           <input
             className="w-full border rounded px-3 py-2 text-sm"
@@ -488,23 +505,6 @@ function OrgTab({ api }) {
               placeholder="Contact phone"
               value={form.ngo_contact_phone}
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Lead name"
-              value={form.village_lead_name}
-              onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Lead contact"
-              value={form.village_lead_phone}
-              onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
             />
           </div>
         </div>
