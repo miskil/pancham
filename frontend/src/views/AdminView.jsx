@@ -291,6 +291,24 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
               onChange={(e) => setForm((p) => ({ ...p, population: e.target.value }))}
             />
           </div>
+          <div className="sm:col-span-2 grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_name}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_phone}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
             <input
@@ -313,22 +331,6 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
               className="w-full border rounded px-3 py-2 text-sm"
               value={form.ngo_contact_phone}
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
-            <input
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={form.village_lead_name}
-              onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
-            <input
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={form.village_lead_phone}
-              onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
             />
           </div>
           <div className="sm:col-span-2">
