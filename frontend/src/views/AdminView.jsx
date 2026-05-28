@@ -217,6 +217,8 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
     ngo_name: "",
     ngo_contact_name: "",
     ngo_contact_phone: "",
+    village_lead_name: "",
+    village_lead_phone: "",
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -246,6 +248,8 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
         ngo_name: "",
         ngo_contact_name: "",
         ngo_contact_phone: "",
+        village_lead_name: "",
+        village_lead_phone: "",
       });
     } catch (err) {
       alert(err.message);
@@ -303,6 +307,22 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.village_lead_name}
+              onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.village_lead_phone}
+              onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
+            />
+          </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading} className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
               {loading ? "Creating…" : "Create Village"}
@@ -326,7 +346,8 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
           <table className="w-full text-sm">
             <thead><tr className="text-left text-gray-500 border-b">
               <th className="pb-2">Name</th><th className="pb-2">District</th>
-              <th className="pb-2">NGO</th><th className="pb-2">Contact</th>
+              <th className="pb-2">NGO</th><th className="pb-2">NGO Contact</th>
+              <th className="pb-2">Village Lead</th>
               <th className="pb-2">Stage</th><th className="pb-2">Active</th>
               {villageViewEnabled && <th className="pb-2"></th>}
             </tr></thead>
@@ -337,6 +358,7 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
                   <td className="py-2 text-gray-500">{v.district}</td>
                   <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
                   <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
+                  <td className="py-2 text-gray-600">{v.village_lead_name || v.village_lead_phone || "-"}</td>
                   <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
                   <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
                   {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
@@ -597,6 +619,8 @@ function OrgTab() {
     ngo_name: "",
     ngo_contact_name: "",
     ngo_contact_phone: "",
+    village_lead_name: "",
+    village_lead_phone: "",
     ngo_whatsapp_phone: "",
     vdc_members: Array.from({ length: 5 }, () => ({ name: "", role: "", phone: "" })),
   });
@@ -620,6 +644,8 @@ function OrgTab() {
         ngo_name: data.ngo_name || "",
         ngo_contact_name: data.ngo_contact_name || "",
         ngo_contact_phone: data.ngo_contact_phone || "",
+        village_lead_name: data.village_lead_name || "",
+        village_lead_phone: data.village_lead_phone || "",
         ngo_whatsapp_phone: data.ngo_whatsapp_phone || "",
         vdc_members: members,
       });
@@ -694,6 +720,7 @@ function OrgTab() {
               <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
                 <p><span className="font-medium">NGO:</span> {form.ngo_name || "-"}</p>
                 <p><span className="font-medium">Contact:</span> {form.ngo_contact_name || "-"}{form.ngo_contact_phone ? ` (${form.ngo_contact_phone})` : ""}</p>
+                <p><span className="font-medium">Village Lead:</span> {form.village_lead_name || "-"}{form.village_lead_phone ? ` (${form.village_lead_phone})` : ""}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -837,12 +864,13 @@ function StatusTab() {
 
 function VillageOrgReadOnly({ village }) {
   if (!village) return null;
-  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone;
+  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
   if (!hasOrg) return null;
   return (
     <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
       <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
       <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
+      <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
     </div>
   );
 }

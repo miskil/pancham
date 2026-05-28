@@ -382,6 +382,8 @@ function OrgTab({ api }) {
     ngo_name: "",
     ngo_contact_name: "",
     ngo_contact_phone: "",
+    village_lead_name: "",
+    village_lead_phone: "",
     ngo_whatsapp_phone: "",
     vdc_members: Array.from({ length: 5 }, () => ({ name: "", role: "", phone: "" })),
   });
@@ -396,6 +398,8 @@ function OrgTab({ api }) {
         ngo_name: data.ngo_name || "",
         ngo_contact_name: data.ngo_contact_name || "",
         ngo_contact_phone: data.ngo_contact_phone || "",
+        village_lead_name: data.village_lead_name || "",
+        village_lead_phone: data.village_lead_phone || "",
         ngo_whatsapp_phone: data.ngo_whatsapp_phone || "",
         vdc_members: members,
       });
@@ -451,6 +455,7 @@ function OrgTab({ api }) {
       <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
         <p><span className="font-medium">NGO:</span> {form.ngo_name || "-"}</p>
         <p><span className="font-medium">Contact:</span> {form.ngo_contact_name || "-"}{form.ngo_contact_phone ? ` (${form.ngo_contact_phone})` : ""}</p>
+        <p><span className="font-medium">Village Lead:</span> {form.village_lead_name || "-"}{form.village_lead_phone ? ` (${form.village_lead_phone})` : ""}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -638,12 +643,13 @@ function EvidenceTab({ api }) {
 
 function VillageOrgReadOnly({ village }) {
   if (!village) return null;
-  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone;
+  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
   if (!hasOrg) return null;
   return (
     <div className="mt-3 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
       <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
       <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
+      <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
     </div>
   );
 }

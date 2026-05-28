@@ -31,6 +31,8 @@ class OrgProfileOut(BaseModel):
     ngo_name: str | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
+    village_lead_name: str | None = None
+    village_lead_phone: str | None = None
     ngo_whatsapp_phone: str | None = None
     vdc_members: list[VdcMember]
 
@@ -42,6 +44,8 @@ def _serialize_org(village: Village) -> OrgProfileOut:
         ngo_name=village.ngo_name,
         ngo_contact_name=village.ngo_contact_name,
         ngo_contact_phone=village.ngo_contact_phone,
+        village_lead_name=village.village_lead_name,
+        village_lead_phone=village.village_lead_phone,
         ngo_whatsapp_phone=village.ngo_whatsapp_phone,
         vdc_members=members,
     )

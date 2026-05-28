@@ -20,6 +20,8 @@ class VillageOut(BaseModel):
     ngo_name: str | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
+    village_lead_name: str | None = None
+    village_lead_phone: str | None = None
     stage: str
     sub_status: str
 
@@ -64,6 +66,8 @@ async def list_villages(db: AsyncSession = Depends(get_db), _=Depends(donor_acce
                 ngo_name=v.ngo_name,
                 ngo_contact_name=v.ngo_contact_name,
                 ngo_contact_phone=v.ngo_contact_phone,
+                village_lead_name=v.village_lead_name,
+                village_lead_phone=v.village_lead_phone,
                 stage=stage,
                 sub_status=sub_status,
             )

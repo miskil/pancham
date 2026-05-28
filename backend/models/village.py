@@ -22,6 +22,8 @@ class Village(Base):
     ngo_name: Mapped[str] = mapped_column(String, nullable=True)
     ngo_contact_name: Mapped[str] = mapped_column(String, nullable=True)
     ngo_contact_phone: Mapped[str] = mapped_column(String, nullable=True)
+    village_lead_name: Mapped[str] = mapped_column(String, nullable=True)
+    village_lead_phone: Mapped[str] = mapped_column(String, nullable=True)
     ngo_whatsapp_phone: Mapped[str] = mapped_column(String, nullable=True)
     vdc_members: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
