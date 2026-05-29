@@ -48,6 +48,7 @@ function makeApi(token) {
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
     createPlan: (b) => f("/village/plan", { method: "POST", body: JSON.stringify(b) }),
     getBaseline: () => f("/village/plan/baseline"),
+    updateBaseline: (b) => f("/village/plan/baseline", { method: "PATCH", body: JSON.stringify(b) }),
     getWip: () => f("/village/plan/wip"),
     updateWip: (b) => f("/village/plan/wip", { method: "PATCH", body: JSON.stringify(b) }),
     listUpdates: () => f("/village/status"),
@@ -827,12 +828,31 @@ function ProjectTab({ me, api }) {
     api.getWip().then(setWip).catch(() => {});
   }, [api]);
 
+  async function saveBaselineDraft() {
+    setSaving(true);
+    setError(null);
+    try {
+      const currentBaseline = baseline
+        ? await api.updateBaseline({ plan_data: draftData ?? baseline.plan_data, submit: false })
+        : await api.createPlan({ plan_data: draftData, submit: false });
+      setBaseline(currentBaseline);
+      setDraftData(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function submitPlan() {
     setSaving(true);
     setError(null);
     try {
-      await api.createPlan({ plan_data: draftData, submit: true });
-      setBaseline(await api.getBaseline().catch(() => null));
+      const submittedBaseline = baseline
+        ? await api.updateBaseline({ plan_data: draftData ?? baseline.plan_data, submit: true })
+        : await api.createPlan({ plan_data: draftData, submit: true });
+      setBaseline(submittedBaseline);
+      setDraftData(null);
     } catch (err) { setError(err.message); } finally { setSaving(false); }
   }
 
@@ -852,9 +872,14 @@ function ProjectTab({ me, api }) {
       <div className="bg-white rounded-xl border p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-700">3-Year Activity Plan</h2>
-          <button onClick={submitPlan} disabled={saving} className="btn-sm bg-primary-700">
-            {saving ? "Submitting…" : "Submit Plan"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={saveBaselineDraft} disabled={saving} className="btn-sm bg-gray-400">
+              {saving ? "Saving..." : "Save Draft"}
+            </button>
+            <button onClick={submitPlan} disabled={saving} className="btn-sm bg-primary-700">
+              {saving ? "Submitting…" : "Submit Plan"}
+            </button>
+          </div>
         </div>
         {error && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
         <PlanMilestonesViewer
@@ -867,6 +892,8 @@ function ProjectTab({ me, api }) {
   }
 
   const frozen = baseline.status === "FROZEN";
+  const baselineEditable = baseline.status === "DRAFT";
+  const baselineDataForView = draftData ?? baseline.plan_data;
   const currentWipData = draftData ?? wip?.plan_data;
   const exportPlanId = wip?.id || baseline?.id;
 
@@ -901,9 +928,25 @@ function ProjectTab({ me, api }) {
         <div className="bg-white rounded-xl border p-5">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="font-semibold text-gray-700">Baseline Plan</h2>
-            <span className="text-xs bg-gray-100 text-gray-500 rounded px-2 py-0.5">Frozen — read only</span>
+            <span className="text-xs bg-gray-100 text-gray-500 rounded px-2 py-0.5">
+              {baseline.status === "FROZEN" ? "Frozen - read only" : baseline.status}
+            </span>
+            {baselineEditable && draftData && (
+              <div className="ml-auto flex gap-2">
+                <button onClick={saveBaselineDraft} disabled={saving} className="btn-sm bg-gray-400">
+                  {saving ? "Saving..." : "Save Draft"}
+                </button>
+                <button onClick={submitPlan} disabled={saving} className="btn-sm bg-primary-700">
+                  {saving ? "Submitting..." : "Submit Plan"}
+                </button>
+              </div>
+            )}
           </div>
-          <PlanMilestonesViewer plan={baseline} readonly={true} />
+          <PlanMilestonesViewer
+            plan={{ ...baseline, plan_data: baselineDataForView }}
+            readonly={!baselineEditable}
+            onChange={baselineEditable ? setDraftData : undefined}
+          />
         </div>
       )}
 

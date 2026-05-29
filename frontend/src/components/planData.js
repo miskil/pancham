@@ -63,6 +63,8 @@ export function normalizeActivity(activity) {
     activity: source.activity || source.details || "",
     poc: source.poc || "",
     amount: source.amount ?? null,
+    end_date: source.end_date || source.due_date || "",
+    pct_complete: source.pct_complete ?? source.percent_complete ?? "",
     notes: source.notes || source.comment || "",
   };
 }
@@ -128,5 +130,7 @@ export function sumPlanAmount(planData) {
 }
 
 export function countFilledPlanActivities(planData) {
-  return flattenPlanActivities(planData).filter((item) => item.activity || item.poc || item.amount != null || item.notes).length;
+  return flattenPlanActivities(planData).filter(
+    (item) => item.activity || item.poc || item.amount != null || item.end_date || item.pct_complete !== "" || item.notes,
+  ).length;
 }

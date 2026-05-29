@@ -57,6 +57,33 @@ async def create_plan(body: PlanBody, db: AsyncSession = Depends(get_db), user=D
     return _out(plan)
 
 
+@router.patch("/baseline", response_model=PlanOut)
+async def update_baseline(body: PlanBody, db: AsyncSession = Depends(get_db), user=Depends(village_only)):
+    plan = await _get(db, user["village_id"], "BASELINE")
+    if not plan:
+        raise HTTPException(status_code=404, detail="No baseline plan yet")
+    if plan.status == "FROZEN":
+        raise HTTPException(status_code=400, detail="Baseline is frozen and cannot be edited")
+
+    result = await db.execute(select(Village).where(Village.id == user["village_id"]))
+    village = result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+
+    if body.plan_data is not None:
+        plan.plan_data = body.plan_data
+
+    if body.submit:
+        plan.status = "SUBMITTED"
+        village.internal_status = "PLAN_SUBMITTED"
+    elif plan.status != "SUBMITTED":
+        plan.status = "DRAFT"
+
+    await db.commit()
+    await db.refresh(plan)
+    return _out(plan)
+
+
 @router.get("/baseline", response_model=PlanOut)
 async def get_baseline(db: AsyncSession = Depends(get_db), user=Depends(village_only)):
     plan = await _get(db, user["village_id"], "BASELINE")

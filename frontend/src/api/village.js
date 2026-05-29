@@ -10,6 +10,7 @@ export const updateProposal = (body) => patch("/village/proposal", body);
 
 export const createPlan = (body) => post("/village/plan", body);
 export const getBaseline = () => get("/village/plan/baseline");
+export const updateBaseline = (body) => patch("/village/plan/baseline", body);
 export const getWip = () => get("/village/plan/wip");
 export const updateWip = (body) => patch("/village/plan/wip", body);
 
