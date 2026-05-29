@@ -681,6 +681,8 @@ function AdminUsersTab() {
 }
 
 function ProposalsTab() {
+  const [proposals, setProposals] = useState([]);
+  const [villageMeta, setVillageMeta] = useState({});
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
