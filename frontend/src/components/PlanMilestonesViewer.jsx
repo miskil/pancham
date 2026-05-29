@@ -57,13 +57,27 @@ function MilestoneCard({
               placeholder={`Milestone ${milestoneIndex}`}
             />
           )}
-          {(milestone.categories || []).length > 0 && (
-            <div className="mt-2 inline-block rounded-lg bg-primary-50 px-2.5 py-1">
-              <p className="text-xs text-primary-700 font-medium">
-                {(milestone.categories || []).join(", ")}
-              </p>
-            </div>
-          )}
+          <div className="mt-2 flex flex-wrap gap-1">
+            {PLAN_CATEGORY_OPTIONS.map((item) => {
+              const active = (milestone.categories || []).includes(item.code);
+              return (
+                <button
+                  key={item.code}
+                  type="button"
+                  onClick={() => !readonly && toggleCategory(item.code)}
+                  disabled={readonly}
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium transition-all ${
+                    active
+                      ? "bg-primary-600 text-white border border-primary-600"
+                      : "bg-ink-100 text-ink-400 border border-ink-200"
+                  } ${readonly ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
+                  title={item.title}
+                >
+                  {item.code}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
@@ -77,33 +91,6 @@ function MilestoneCard({
           )}
         </div>
       </div>
-
-      {!readonly && (
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Select Categories</p>
-        <div className="flex flex-wrap gap-1.5">
-          {PLAN_CATEGORY_OPTIONS.map((item) => {
-            const active = (milestone.categories || []).includes(item.code);
-            return (
-              <button
-                key={item.code}
-                type="button"
-                onClick={() => !readonly && toggleCategory(item.code)}
-                disabled={readonly}
-                className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-all ${
-                  active
-                    ? "border-primary-500 bg-primary-100 text-primary-700 font-semibold"
-                    : "border-primary-100 bg-white text-ink-500 hover:border-primary-200"
-                } ${readonly ? "cursor-default" : ""}`}
-                title={item.title}
-              >
-                {item.code}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      )}
 
       <div>
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Impact</p>
