@@ -45,6 +45,11 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         token = create_token(subject=admin.login_username, role="ADMIN", admin_id=admin.id)
         return TokenResponse(access_token=token, role="ADMIN", must_change_password=admin.must_change_password)
 
+    # Fallback admin login from environment to avoid lockout on fresh/reset DB.
+    if body.username == settings.admin_username and body.password == settings.admin_password:
+        token = create_token(subject=settings.admin_username, role="ADMIN")
+        return TokenResponse(access_token=token, role="ADMIN", must_change_password=False)
+
     # --- Village ---
     vu_result = await db.execute(
         select(VillageUser).where(VillageUser.login_username == body.username, VillageUser.is_active == True)  # noqa: E712
