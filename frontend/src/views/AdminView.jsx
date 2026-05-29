@@ -737,12 +737,36 @@ function ProposalsTab() {
             <h2 className="font-semibold">{selected.village_name}</h2>
             <VillageOrgReadOnly village={selectedVillage} />
             <div className="space-y-2 text-sm">
-              {["focus_area", "description", "community_context", "key_activities"].map((f) => selected[f] && (
-                <div key={f}>
-                  <span className="text-xs text-gray-500 uppercase">{f.replace("_", " ")}</span>
-                  <p className="text-gray-800">{selected[f]}</p>
+              {!!(selected.focus_areas?.length) && (
+                <div>
+                  <span className="text-xs text-gray-500 uppercase">Focus Areas</span>
+                  <p className="text-gray-800">{selected.focus_areas.join(", ")}</p>
                 </div>
-              ))}
+              )}
+              {!!selected.per_capita_income && (
+                <div>
+                  <span className="text-xs text-gray-500 uppercase">गावाच दर डोई उत्पन्न</span>
+                  <p className="text-gray-800">{selected.per_capita_income}</p>
+                </div>
+              )}
+              {!!selected.description && (
+                <div>
+                  <span className="text-xs text-gray-500 uppercase">गावाची भौगोलीक आणि सामाजीक माहिती</span>
+                  <p className="text-gray-800 whitespace-pre-wrap">{selected.description}</p>
+                </div>
+              )}
+              {!!selected.community_context && (
+                <div>
+                  <span className="text-xs text-gray-500 uppercase">गावाची गरज</span>
+                  <p className="text-gray-800 whitespace-pre-wrap">{selected.community_context}</p>
+                </div>
+              )}
+              {!!selected.key_activities && (
+                <div>
+                  <span className="text-xs text-gray-500 uppercase">गावा साठी काय करता येईल</span>
+                  <p className="text-gray-800 whitespace-pre-wrap">{selected.key_activities}</p>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>

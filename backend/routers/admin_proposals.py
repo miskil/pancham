@@ -27,7 +27,9 @@ class ProposalOut(BaseModel):
     village_id: str
     village_name: str
     status: str
+    focus_areas: list[str]
     focus_area: str | None
+    per_capita_income: str | None
     description: str | None
     community_context: str | None
     key_activities: str | None
@@ -37,21 +39,35 @@ class ProposalOut(BaseModel):
         from_attributes = True
 
 
+def _parse_focus_areas(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _to_out(p: Proposal) -> ProposalOut:
+    return ProposalOut(
+        id=p.id,
+        village_id=p.village_id,
+        village_name=p.village.name,
+        status=p.status,
+        focus_areas=_parse_focus_areas(p.focus_area),
+        focus_area=p.focus_area,
+        per_capita_income=p.per_capita_income,
+        description=p.description,
+        community_context=p.community_context,
+        key_activities=p.key_activities,
+        reviewer_notes=p.reviewer_notes,
+    )
+
+
 @router.get("", response_model=list[ProposalOut])
 async def list_proposals(db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
     result = await db.execute(
         select(Proposal).options(selectinload(Proposal.village)).order_by(Proposal.submitted_at.desc())
     )
     proposals = result.scalars().all()
-    return [
-        ProposalOut(
-            id=p.id, village_id=p.village_id, village_name=p.village.name,
-            status=p.status, focus_area=p.focus_area, description=p.description,
-            community_context=p.community_context, key_activities=p.key_activities,
-            reviewer_notes=p.reviewer_notes,
-        )
-        for p in proposals
-    ]
+    return [_to_out(p) for p in proposals]
 
 
 @router.get("/{proposal_id}", response_model=ProposalOut)
@@ -62,12 +78,7 @@ async def get_proposal(proposal_id: str, db: AsyncSession = Depends(get_db), _=D
     p = result.scalar_one_or_none()
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
-    return ProposalOut(
-        id=p.id, village_id=p.village_id, village_name=p.village.name,
-        status=p.status, focus_area=p.focus_area, description=p.description,
-        community_context=p.community_context, key_activities=p.key_activities,
-        reviewer_notes=p.reviewer_notes,
-    )
+    return _to_out(p)
 
 
 async def _transition_proposal(proposal_id: str, new_status: str, notes: str | None, db: AsyncSession):

@@ -6,7 +6,7 @@ import { Thread } from "../components/Thread";
 import { VillageChannel } from "../components/VillageChannel";
 import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
-import { countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
+import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Status"];
 const STAGE_PROGRESS = {
@@ -282,7 +282,7 @@ function StatCard({ label, value, note }) {
 
 function ProposalTab({ me, onUpdate, api }) {
   const [proposal, setProposal] = useState(null);
-  const [form, setForm] = useState({ focus_area: "", description: "", community_context: "", key_activities: "" });
+  const [form, setForm] = useState({ focus_areas: [], per_capita_income: "", description: "", community_context: "", key_activities: "" });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [noProposal, setNoProposal] = useState(false);
@@ -295,7 +295,13 @@ function ProposalTab({ me, onUpdate, api }) {
       setNoProposal(false);
       setLoadError(null);
       setProposal(p);
-      setForm({ focus_area: p.focus_area || "", description: p.description || "", community_context: p.community_context || "", key_activities: p.key_activities || "" });
+      setForm({
+        focus_areas: p.focus_areas || (p.focus_area ? p.focus_area.split(",").map((item) => item.trim()).filter(Boolean) : []),
+        per_capita_income: p.per_capita_income || "",
+        description: p.description || "",
+        community_context: p.community_context || "",
+        key_activities: p.key_activities || "",
+      });
     }).catch((err) => {
       if ((err.message || "").toLowerCase().includes("no proposal yet")) {
         setLoadError(null);
@@ -342,6 +348,16 @@ function ProposalTab({ me, onUpdate, api }) {
   };
   const canEdit = !proposal || ["DRAFT", "AMENDMENT_REQUESTED"].includes(proposal?.status);
 
+  function toggleFocusArea(code) {
+    setForm((prev) => {
+      const current = prev.focus_areas || [];
+      const next = current.includes(code)
+        ? current.filter((item) => item !== code)
+        : [...current, code];
+      return { ...prev, focus_areas: next };
+    });
+  }
+
   return (
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -368,33 +384,98 @@ function ProposalTab({ me, onUpdate, api }) {
         </div>
       )}
       {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Focus Areas</label>
+        {canEdit ? (
+          <div className="flex flex-wrap gap-1.5">
+            {PLAN_CATEGORY_OPTIONS.map((item) => {
+              const active = (form.focus_areas || []).includes(item.code);
+              return (
+                <button
+                  key={item.code}
+                  type="button"
+                  onClick={() => toggleFocusArea(item.code)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
+                    active
+                      ? "bg-primary-600 text-white border-primary-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-primary-300"
+                  }`}
+                  title={item.title}
+                >
+                  {item.code}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
+            {(form.focus_areas || []).length > 0 ? (form.focus_areas || []).join(", ") : <span className="text-gray-400 italic">Not filled in</span>}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">गावाच दर डोई उत्पन्न</label>
+        {canEdit ? (
+          <input
+            className="w-full border rounded px-3 py-2 text-sm"
+            value={form.per_capita_income}
+            onChange={(e) => setForm((p) => ({ ...p, per_capita_income: e.target.value }))}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
+            {form.per_capita_income || <span className="text-gray-400 italic">Not filled in</span>}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">गावाची भौगोलीक आणि सामाजीक माहिती</label>
+        {canEdit ? (
+          <textarea
+            className="w-full border rounded px-3 py-2 text-sm h-24"
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
+            {form.description || <span className="text-gray-400 italic">Not filled in</span>}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">गावाची गरज</label>
+        {canEdit ? (
+          <textarea
+            className="w-full border rounded px-3 py-2 text-sm h-24"
+            value={form.community_context}
+            onChange={(e) => setForm((p) => ({ ...p, community_context: e.target.value }))}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
+            {form.community_context || <span className="text-gray-400 italic">Not filled in</span>}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">गावा साठी काय करता येईल</label>
+        {canEdit ? (
+          <textarea
+            className="w-full border rounded px-3 py-2 text-sm h-24"
+            value={form.key_activities}
+            onChange={(e) => setForm((p) => ({ ...p, key_activities: e.target.value }))}
+          />
+        ) : (
+          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
+            {form.key_activities || <span className="text-gray-400 italic">Not filled in</span>}
+          </p>
+        )}
+      </div>
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">{success}</div>}
-
-      {["focus_area", "description", "community_context", "key_activities"].map((f) => (
-        <div key={f}>
-          <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">{f.replace(/_/g, " ")}</label>
-          {canEdit ? (
-            f === "focus_area" ? (
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form[f]}
-                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
-              />
-            ) : (
-              <textarea
-                className="w-full border rounded px-3 py-2 text-sm h-24"
-                value={form[f]}
-                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
-              />
-            )
-          ) : (
-            <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-              {form[f] || <span className="text-gray-400 italic">Not filled in</span>}
-            </p>
-          )}
-        </div>
-      ))}
 
       {canEdit && (
         <div className="flex gap-3">

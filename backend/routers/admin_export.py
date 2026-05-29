@@ -91,16 +91,18 @@ async def export_proposal(
     doc.add_paragraph()
 
     _heading(doc, "Proposal Details", level=2)
-    _row(doc, "Focus Area", proposal.focus_area or "")
+    focus_areas = ", ".join([item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()])
+    _row(doc, "Focus Areas", focus_areas or "")
+    _row(doc, "गावाच दर डोई उत्पन्न", proposal.per_capita_income or "")
     doc.add_paragraph()
 
-    _heading(doc, "Description", level=2)
+    _heading(doc, "गावाची भौगोलीक आणि सामाजीक माहिती", level=2)
     doc.add_paragraph(proposal.description or "—")
 
-    _heading(doc, "Community Context", level=2)
+    _heading(doc, "गावाची गरज", level=2)
     doc.add_paragraph(proposal.community_context or "—")
 
-    _heading(doc, "Key Activities", level=2)
+    _heading(doc, "गावा साठी काय करता येईल", level=2)
     doc.add_paragraph(proposal.key_activities or "—")
 
     if proposal.reviewer_notes:

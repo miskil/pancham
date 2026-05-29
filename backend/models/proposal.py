@@ -12,6 +12,7 @@ class Proposal(Base):
     village_id: Mapped[str] = mapped_column(String, ForeignKey("villages.id"), nullable=False)
     status: Mapped[str] = mapped_column(String, default="DRAFT")
     focus_area: Mapped[str] = mapped_column(String, nullable=True)
+    per_capita_income: Mapped[str] = mapped_column(String, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     community_context: Mapped[str] = mapped_column(Text, nullable=True)
     key_activities: Mapped[str] = mapped_column(Text, nullable=True)

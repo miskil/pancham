@@ -12,7 +12,9 @@ village_only = require_role("VILLAGE")
 
 
 class ProposalBody(BaseModel):
+    focus_areas: list[str] | None = None
     focus_area: str | None = None
+    per_capita_income: str | None = None
     description: str | None = None
     community_context: str | None = None
     key_activities: str | None = None
@@ -22,7 +24,9 @@ class ProposalBody(BaseModel):
 class ProposalOut(BaseModel):
     id: str
     status: str
+    focus_areas: list[str]
     focus_area: str | None
+    per_capita_income: str | None
     description: str | None
     community_context: str | None
     key_activities: str | None
@@ -30,6 +34,36 @@ class ProposalOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+def _parse_focus_areas(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _serialize_focus_areas(body: ProposalBody) -> str | None:
+    if body.focus_areas is not None:
+        cleaned = [item.strip() for item in body.focus_areas if item and item.strip()]
+        return ",".join(dict.fromkeys(cleaned)) if cleaned else None
+    if body.focus_area is not None:
+        return body.focus_area.strip() or None
+    return None
+
+
+def _to_out(proposal: Proposal) -> ProposalOut:
+    focus_areas = _parse_focus_areas(proposal.focus_area)
+    return ProposalOut(
+        id=proposal.id,
+        status=proposal.status,
+        focus_areas=focus_areas,
+        focus_area=proposal.focus_area,
+        per_capita_income=proposal.per_capita_income,
+        description=proposal.description,
+        community_context=proposal.community_context,
+        key_activities=proposal.key_activities,
+        reviewer_notes=proposal.reviewer_notes,
+    )
 
 
 @router.post("", response_model=ProposalOut)
@@ -42,7 +76,8 @@ async def create_proposal(body: ProposalBody, db: AsyncSession = Depends(get_db)
     proposal = Proposal(
         village_id=user["village_id"],
         status=status,
-        focus_area=body.focus_area,
+        focus_area=_serialize_focus_areas(body),
+        per_capita_income=body.per_capita_income,
         description=body.description,
         community_context=body.community_context,
         key_activities=body.key_activities,
@@ -56,7 +91,7 @@ async def create_proposal(body: ProposalBody, db: AsyncSession = Depends(get_db)
 
     await db.commit()
     await db.refresh(proposal)
-    return proposal
+    return _to_out(proposal)
 
 
 @router.get("", response_model=ProposalOut)
@@ -65,7 +100,7 @@ async def get_proposal(db: AsyncSession = Depends(get_db), user=Depends(village_
     proposal = result.scalar_one_or_none()
     if not proposal:
         raise HTTPException(status_code=404, detail="No proposal yet")
-    return proposal
+    return _to_out(proposal)
 
 
 @router.patch("", response_model=ProposalOut)
@@ -77,8 +112,11 @@ async def update_proposal(body: ProposalBody, db: AsyncSession = Depends(get_db)
     if proposal.status == "ACCEPTED":
         raise HTTPException(status_code=400, detail="Accepted proposal is read-only")
 
-    if body.focus_area is not None:
-        proposal.focus_area = body.focus_area
+    serialized_focus_areas = _serialize_focus_areas(body)
+    if serialized_focus_areas is not None:
+        proposal.focus_area = serialized_focus_areas
+    if body.per_capita_income is not None:
+        proposal.per_capita_income = body.per_capita_income
     if body.description is not None:
         proposal.description = body.description
     if body.community_context is not None:
@@ -95,4 +133,4 @@ async def update_proposal(body: ProposalBody, db: AsyncSession = Depends(get_db)
 
     await db.commit()
     await db.refresh(proposal)
-    return proposal
+    return _to_out(proposal)
