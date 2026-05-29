@@ -6,7 +6,7 @@ import { Thread } from "../components/Thread";
 import { VillageChannel } from "../components/VillageChannel";
 import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
-import { countFilledPlanActivities, flattenPlanActivities } from "../components/planData";
+import { countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Project", "Status"];
 const STAGE_PROGRESS = {
@@ -205,9 +205,23 @@ function DashboardTab({ me, api }) {
   const progress = stageProgress(me.stage);
   const publishedCount = updates.filter((u) => u.is_published).length;
   const currentPlan = wip || baseline;
+  const normalizedPlan = currentPlan ? normalizePlanData(currentPlan.plan_data || {}) : null;
   const planRows = currentPlan ? flattenPlanActivities(currentPlan.plan_data || {}) : [];
   const filledRows = currentPlan ? countFilledPlanActivities(currentPlan.plan_data || {}) : 0;
   const planFillPercent = planRows.length ? Math.round((filledRows / planRows.length) * 100) : 0;
+  const milestoneCount = normalizedPlan
+    ? Object.values(normalizedPlan).reduce((sum, milestones) => sum + milestones.length, 0)
+    : 0;
+  const totalSpent = currentPlan ? sumPlanAmount(currentPlan.plan_data || {}) : 0;
+  const impactMilestones = normalizedPlan
+    ? Object.values(normalizedPlan).flat().filter((milestone) => (milestone.impact || "").trim()).length
+    : 0;
+  const impactPreview = normalizedPlan
+    ? Object.values(normalizedPlan)
+        .flat()
+        .map((milestone) => (milestone.impact || "").trim())
+        .find(Boolean)
+    : "";
 
   return (
     <div className="space-y-4">
@@ -222,11 +236,15 @@ function DashboardTab({ me, api }) {
         <p className="text-xs text-gray-500 mt-2">{me.stage} • {me.sub_status}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Proposal" value={proposal?.status || (proposalLoadError ? "Load error" : "Not started")} />
-        <StatCard label="Plan" value={baseline?.status || "Not submitted"} />
-        <StatCard label="Plan Filled" value={`${planFillPercent}%`} />
-        <StatCard label="Updates Published" value={`${publishedCount}/${updates.length}`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <StatCard label="Milestones" value={currentPlan ? `${milestoneCount}` : "—"} note={currentPlan ? "across 3 years" : "Submit a plan to start"} />
+        <StatCard label="% Complete" value={currentPlan ? `${planFillPercent}%` : "—"} note={currentPlan ? `${filledRows}/${planRows.length} activities filled` : "Activities and notes will drive progress"} />
+        <StatCard label="$ Spent" value={currentPlan ? `$${totalSpent.toLocaleString("en-IN")}` : "—"} note={currentPlan ? "Total planned amount" : "Plan totals appear here"} />
+        <StatCard
+          label="Impact"
+          value={currentPlan ? `${impactMilestones} milestone${impactMilestones === 1 ? "" : "s"}` : "—"}
+          note={currentPlan ? (impactPreview || "Add an impact statement inside each milestone") : "Impact statements appear here"}
+        />
       </div>
 
       {proposalLoadError && (
@@ -236,24 +254,28 @@ function DashboardTab({ me, api }) {
       )}
 
       <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-medium text-gray-700 mb-3">Checklist</h3>
-        <ul className="space-y-2 text-sm text-gray-700">
-          <li>{proposal ? "✓" : "○"} Proposal created</li>
-          <li>{proposal?.status === "ACCEPTED" ? "✓" : "○"} Proposal accepted by admin</li>
-          <li>{baseline ? "✓" : "○"} Baseline plan submitted</li>
-          <li>{baseline?.status === "FROZEN" ? "✓" : "○"} Baseline plan accepted and frozen</li>
-          <li>{updates.length > 0 ? "✓" : "○"} At least one status update posted</li>
-        </ul>
+        <h3 className="font-medium text-gray-700 mb-3">Plan Highlights</h3>
+        {currentPlan ? (
+          <ul className="space-y-2 text-sm text-gray-700">
+            <li>{milestoneCount > 0 ? "✓" : "○"} {milestoneCount} milestones across the 3-year plan</li>
+            <li>{planFillPercent > 0 ? "✓" : "○"} {planFillPercent}% of activities filled out</li>
+            <li>{totalSpent > 0 ? "✓" : "○"} Planned spend totals $ {totalSpent.toLocaleString("en-IN")}</li>
+            <li>{impactMilestones > 0 ? "✓" : "○"} Impact defined for {impactMilestones} milestones</li>
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-400">Submit a plan to see milestone, spending, and impact summaries.</p>
+        )}
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, note }) {
   return (
-    <div className="bg-white rounded-xl border p-4">
+    <div className="bg-white rounded-xl border p-4 space-y-1.5">
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-base font-semibold text-gray-800 mt-1">{value}</p>
+      {note && <p className="text-xs text-gray-500 leading-snug">{note}</p>}
     </div>
   );
 }

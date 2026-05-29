@@ -32,6 +32,7 @@ export function createEmptyMilestone(index = 1) {
   return {
     milestone: "",
     categories: ["H"],
+    impact: "",
     activities: [createEmptyActivity()],
     label: `Milestone ${index}`,
   };
@@ -73,6 +74,7 @@ export function normalizeMilestone(milestone, index = 1) {
   return {
     milestone: source.milestone || source.title || source.name || `Milestone ${index}`,
     categories: normalizeCategories(source.categories || source.category),
+    impact: source.impact || source.impact_box || "",
     activities,
   };
 }
@@ -91,6 +93,7 @@ export function normalizeYearData(yearData) {
   return source.map((row, index) => ({
     milestone: row?.milestone || row?.title || row?.category || `Milestone ${index + 1}`,
     categories: normalizeCategories(row?.categories || row?.category),
+    impact: row?.impact || row?.impact_box || "",
     activities: [normalizeActivity(row)],
   }));
 }

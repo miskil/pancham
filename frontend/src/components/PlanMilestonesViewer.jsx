@@ -107,6 +107,23 @@ function MilestoneCard({
         </div>
       </div>
 
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Impact</p>
+        {readonly ? (
+          <p className="rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2 text-sm text-ink-700 whitespace-pre-wrap break-words">
+            {milestone.impact || <span className="text-ink-300">—</span>}
+          </p>
+        ) : (
+          <textarea
+            rows={3}
+            className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white resize-none"
+            value={milestone.impact || ""}
+            onChange={(e) => onChange({ ...milestone, impact: e.target.value })}
+            placeholder="Describe the expected impact of this milestone…"
+          />
+        )}
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Activities</p>

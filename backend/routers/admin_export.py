@@ -163,6 +163,7 @@ async def export_plan(
             milestone_title = milestone.get("milestone") or milestone.get("title") or f"Milestone {idx}"
             _heading(doc, milestone_title, level=3)
             _row(doc, "Categories", _normalize_categories(milestone))
+            _row(doc, "Impact", milestone.get("impact") or milestone.get("impact_box") or "")
 
             table = doc.add_table(rows=1, cols=4)
             table.style = "Light List Accent 1"
