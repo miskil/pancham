@@ -3,7 +3,7 @@ import * as api from "../api/admin";
 import { VillageStageTracker } from "../components/VillageStageTracker";
 import { VillageChannel } from "../components/VillageChannel";
 import { Thread } from "../components/Thread";
-import { PlanViewer } from "../components/PlanViewer";
+import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
@@ -648,7 +648,7 @@ function PlansTab() {
             </div>
             <VillageOrgReadOnly village={selected ? villageMeta[selected.village_id] : null} />
             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
-            <PlanViewer
+            <PlanMilestonesViewer
               plan={{ plan_data: draftData ?? selected.plan_data }}
               readonly={frozen}
               onChange={setDraftData}

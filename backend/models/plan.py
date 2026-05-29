@@ -6,20 +6,24 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db import Base
 
 PLAN_CATEGORIES = [
-    "Education",
-    "Environment",
-    "Healthcare",
-    "Income Generation",
-    "Women's Empowerment",
-    "Admin Cost",
+    "H",
+    "E",
+    "En",
+    "WE",
+    "IG",
 ]
 
 
 def empty_plan_data() -> dict:
     return {
         str(yr): [
-            {"category": cat, "details": "", "poc": "", "amount": None}
-            for cat in PLAN_CATEGORIES
+            {
+                "milestone": "",
+                "categories": ["H"],
+                "activities": [
+                    {"activity": "", "poc": "", "amount": None, "notes": ""}
+                ],
+            }
         ]
         for yr in [1, 2, 3]
     }

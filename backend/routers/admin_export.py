@@ -35,6 +35,28 @@ def _row(doc: Document, label: str, value: str):
     p.add_run(value or "—")
 
 
+def _normalize_categories(milestone: dict) -> str:
+    categories = milestone.get("categories") or milestone.get("category") or []
+    if isinstance(categories, str):
+        categories = [categories]
+    cleaned = [str(cat).strip() for cat in categories if str(cat).strip()]
+    return ", ".join(cleaned) or "—"
+
+
+def _normalize_activities(milestone: dict) -> list[dict]:
+    activities = milestone.get("activities")
+    if isinstance(activities, list) and activities:
+        return activities
+    return [
+        {
+            "activity": milestone.get("activity") or milestone.get("details") or "",
+            "poc": milestone.get("poc") or "",
+            "amount": milestone.get("amount"),
+            "notes": milestone.get("notes") or milestone.get("comment") or "",
+        }
+    ]
+
+
 # ── Proposal export ──────────────────────────────────────────────────────────
 
 @router.post("/proposals/{proposal_id}")
@@ -133,25 +155,31 @@ async def export_plan(
 
     plan_data = plan.plan_data or {}
     for year_key in ["1", "2", "3"]:
-        rows = plan_data.get(year_key, [])
-        if not rows:
+        milestones = plan_data.get(year_key, [])
+        if not milestones:
             continue
         _heading(doc, f"Year {year_key}", level=2)
-        table = doc.add_table(rows=1, cols=4)
-        table.style = "Light List Accent 1"
-        hdr = table.rows[0].cells
-        hdr[0].text = "Category"
-        hdr[1].text = "Details"
-        hdr[2].text = "POC"
-        hdr[3].text = "Amount"
-        for item in rows:
-            cells = table.add_row().cells
-            cells[0].text = item.get("category", "")
-            cells[1].text = item.get("details", "") or "—"
-            cells[2].text = item.get("poc", "") or "—"
-            amount = item.get("amount")
-            cells[3].text = str(amount) if amount is not None else "—"
-        doc.add_paragraph()
+        for idx, milestone in enumerate(milestones, start=1):
+            milestone_title = milestone.get("milestone") or milestone.get("title") or f"Milestone {idx}"
+            _heading(doc, milestone_title, level=3)
+            _row(doc, "Categories", _normalize_categories(milestone))
+
+            table = doc.add_table(rows=1, cols=4)
+            table.style = "Light List Accent 1"
+            hdr = table.rows[0].cells
+            hdr[0].text = "Activity"
+            hdr[1].text = "POC"
+            hdr[2].text = "Notes"
+            hdr[3].text = "Amount"
+
+            for activity in _normalize_activities(milestone):
+                cells = table.add_row().cells
+                cells[0].text = activity.get("activity", "") or "—"
+                cells[1].text = activity.get("poc", "") or "—"
+                cells[2].text = activity.get("notes", "") or "—"
+                amount = activity.get("amount")
+                cells[3].text = str(amount) if amount is not None else "—"
+            doc.add_paragraph()
 
     filename = f"Plan_{plan.version_type}_{village.name if village else plan.village_id}_{date.today()}.docx"
     content = _docx_bytes(doc)

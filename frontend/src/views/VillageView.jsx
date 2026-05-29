@@ -4,8 +4,9 @@ import { apiFetch, postForm } from "../api/client";
 import { VillageStageTracker } from "../components/VillageStageTracker";
 import { Thread } from "../components/Thread";
 import { VillageChannel } from "../components/VillageChannel";
-import { PlanViewer } from "../components/PlanViewer";
+import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
+import { countFilledPlanActivities, flattenPlanActivities } from "../components/planData";
 
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Project", "Status"];
 const STAGE_PROGRESS = {
@@ -204,10 +205,8 @@ function DashboardTab({ me, api }) {
   const progress = stageProgress(me.stage);
   const publishedCount = updates.filter((u) => u.is_published).length;
   const currentPlan = wip || baseline;
-  const planRows = currentPlan
-    ? Object.values(currentPlan.plan_data || {}).flatMap((yearRows) => Array.isArray(yearRows) ? yearRows : [])
-    : [];
-  const filledRows = planRows.filter((r) => (r.details || r.poc || r.amount)).length;
+  const planRows = currentPlan ? flattenPlanActivities(currentPlan.plan_data || {}) : [];
+  const filledRows = currentPlan ? countFilledPlanActivities(currentPlan.plan_data || {}) : 0;
   const planFillPercent = planRows.length ? Math.round((filledRows / planRows.length) * 100) : 0;
 
   return (
@@ -755,7 +754,7 @@ function ProjectTab({ me, api }) {
           </button>
         </div>
         {error && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
-        <PlanViewer
+        <PlanMilestonesViewer
           plan={{ plan_data: draftData }}
           readonly={false}
           onChange={setDraftData}
@@ -801,7 +800,7 @@ function ProjectTab({ me, api }) {
             <h2 className="font-semibold text-gray-700">Baseline Plan</h2>
             <span className="text-xs bg-gray-100 text-gray-500 rounded px-2 py-0.5">Frozen — read only</span>
           </div>
-          <PlanViewer plan={baseline} readonly={true} />
+          <PlanMilestonesViewer plan={baseline} readonly={true} />
         </div>
       )}
 
@@ -816,7 +815,7 @@ function ProjectTab({ me, api }) {
             )}
           </div>
           {wip ? (
-            <PlanViewer
+            <PlanMilestonesViewer
               plan={{ plan_data: currentWipData }}
               readonly={false}
               onChange={setDraftData}
