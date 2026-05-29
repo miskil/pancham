@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  DEFAULT_PLAN_META,
   PLAN_CATEGORY_OPTIONS,
   PLAN_YEARS,
   categoryTitle,
   createEmptyActivity,
   createEmptyMilestone,
+  getPlanMeta,
   normalizePlanData,
   sumPlanAmount,
+  withPlanMeta,
 } from "./planData";
 
 function formatDisplayAmount(amount, currency, rate) {
@@ -313,12 +316,35 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, onChange 
 }
 
 export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
-  const [currency, setCurrency] = useState("INR");
-  const [rate, setRate] = useState(84);
+  const initialMeta = getPlanMeta(plan?.plan_data);
+  const [currency, setCurrency] = useState(initialMeta.currency || DEFAULT_PLAN_META.currency);
+  const [rate, setRate] = useState(initialMeta.rate || DEFAULT_PLAN_META.rate);
 
   if (!plan) return <p className="text-sm text-gray-400">Not available yet.</p>;
 
   const normalizedPlan = normalizePlanData(plan.plan_data);
+
+  useEffect(() => {
+    const nextMeta = getPlanMeta(plan?.plan_data);
+    setCurrency(nextMeta.currency);
+    setRate(nextMeta.rate);
+  }, [plan]);
+
+  function emitPlanWithMeta(nextYears, nextMeta) {
+    onChange?.(withPlanMeta(nextYears, nextMeta));
+  }
+
+  function handleCurrencyChange(nextCurrency) {
+    setCurrency(nextCurrency);
+    emitPlanWithMeta(normalizedPlan, { currency: nextCurrency, rate });
+  }
+
+  function handleRateChange(nextRate) {
+    const safeRate = Number.isFinite(nextRate) && nextRate > 0 ? nextRate : 1;
+    setRate(safeRate);
+    emitPlanWithMeta(normalizedPlan, { currency, rate: safeRate });
+  }
+
   const grandTotalINR = sumPlanAmount(normalizedPlan);
   const symbol = currency === "INR" ? "₹" : "$";
   const grandTotalDisplay = currency === "INR"
@@ -326,7 +352,7 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
     : (grandTotalINR / rate).toFixed(2);
 
   function handleYearChange(year, rows) {
-    onChange?.({ ...normalizedPlan, [String(year)]: rows });
+    emitPlanWithMeta({ ...normalizedPlan, [String(year)]: rows }, { currency, rate });
   }
 
   return (
@@ -340,13 +366,13 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
           <span className="text-sm font-medium text-ink-600">Amount in</span>
           <span className="inline-flex rounded-xl border border-primary-100 overflow-hidden text-sm bg-white">
             <button
-              onClick={() => setCurrency("INR")}
+              onClick={() => handleCurrencyChange("INR")}
               className={`px-3 py-2 ${currency === "INR" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
             >
               ₹
             </button>
             <button
-              onClick={() => setCurrency("USD")}
+              onClick={() => handleCurrencyChange("USD")}
               className={`px-3 py-2 ${currency === "USD" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
             >
               $
@@ -359,7 +385,7 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
                 type="number"
                 min="1"
                 value={rate}
-                onChange={(e) => setRate(parseFloat(e.target.value) || 1)}
+                onChange={(e) => handleRateChange(parseFloat(e.target.value) || 1)}
                 className="w-20 border border-primary-100 rounded-xl px-2 py-1 text-right text-ink-700 bg-white"
               />
             </span>

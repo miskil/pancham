@@ -42,5 +42,6 @@ class ProjectPlan(Base):
     created_from_plan_id: Mapped[str] = mapped_column(String, ForeignKey("project_plans.id"), nullable=True)
     plan_data: Mapped[dict] = mapped_column(JSONB, nullable=False, default=empty_plan_data)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     village: Mapped["Village"] = relationship("Village", back_populates="plans")  # noqa: F821

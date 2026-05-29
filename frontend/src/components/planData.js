@@ -1,5 +1,10 @@
 export const PLAN_YEARS = ["1", "2", "3"];
 
+export const DEFAULT_PLAN_META = {
+  currency: "INR",
+  rate: 84,
+};
+
 export const PLAN_CATEGORY_OPTIONS = [
   { code: "H", label: "H", title: "Health" },
   { code: "E", label: "E", title: "Education" },
@@ -109,6 +114,25 @@ export function normalizePlanData(planData) {
     normalized[year] = normalizeYearData(source[year]);
   }
   return normalized;
+}
+
+export function getPlanMeta(planData) {
+  const source = planData && typeof planData === "object" ? planData : {};
+  const rawMeta = source.__meta && typeof source.__meta === "object" ? source.__meta : {};
+  const currency = rawMeta.currency === "USD" ? "USD" : "INR";
+  const parsedRate = Number(rawMeta.rate);
+  const rate = Number.isFinite(parsedRate) && parsedRate > 0 ? parsedRate : DEFAULT_PLAN_META.rate;
+  return { currency, rate };
+}
+
+export function withPlanMeta(yearData, meta) {
+  const currency = meta?.currency === "USD" ? "USD" : "INR";
+  const parsedRate = Number(meta?.rate);
+  const rate = Number.isFinite(parsedRate) && parsedRate > 0 ? parsedRate : DEFAULT_PLAN_META.rate;
+  return {
+    ...(yearData || {}),
+    __meta: { currency, rate },
+  };
 }
 
 export function flattenPlanActivities(planData) {

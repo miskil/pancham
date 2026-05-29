@@ -23,6 +23,7 @@ class PlanOut(BaseModel):
     status: str
     plan_data: dict
     frozen_at: str | None
+    updated_at: str | None
 
     class Config:
         from_attributes = True
@@ -119,6 +120,7 @@ def _out(p: ProjectPlan) -> PlanOut:
         status=p.status,
         plan_data=p.plan_data or empty_plan_data(),
         frozen_at=p.frozen_at.isoformat() if p.frozen_at else None,
+        updated_at=p.updated_at.isoformat() if p.updated_at else None,
     )
 
 
