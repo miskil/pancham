@@ -57,17 +57,13 @@ function MilestoneCard({
               placeholder={`Milestone ${milestoneIndex}`}
             />
           )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(milestone.categories || []).map((code) => (
-              <span
-                key={code}
-                className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700"
-                title={categoryTitle(code)}
-              >
-                {code}
-              </span>
-            ))}
-          </div>
+          {(milestone.categories || []).length > 0 && (
+            <div className="mt-2 inline-block rounded-lg bg-primary-50 px-2.5 py-1">
+              <p className="text-xs text-primary-700 font-medium">
+                {(milestone.categories || []).join(", ")}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
@@ -82,9 +78,10 @@ function MilestoneCard({
         </div>
       </div>
 
+      {!readonly && (
       <div>
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Categories</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Select Categories</p>
+        <div className="flex flex-wrap gap-1.5">
           {PLAN_CATEGORY_OPTIONS.map((item) => {
             const active = (milestone.categories || []).includes(item.code);
             return (
@@ -93,10 +90,10 @@ function MilestoneCard({
                 type="button"
                 onClick={() => !readonly && toggleCategory(item.code)}
                 disabled={readonly}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-all ${
                   active
-                    ? "border-primary-600 bg-primary-600 text-white"
-                    : "border-primary-100 bg-white text-ink-600 hover:border-primary-300"
+                    ? "border-primary-500 bg-primary-100 text-primary-700 font-semibold"
+                    : "border-primary-100 bg-white text-ink-500 hover:border-primary-200"
                 } ${readonly ? "cursor-default" : ""}`}
                 title={item.title}
               >
@@ -106,6 +103,7 @@ function MilestoneCard({
           })}
         </div>
       </div>
+      )}
 
       <div>
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Impact</p>
