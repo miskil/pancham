@@ -107,6 +107,19 @@ async def export_proposal(
         _row(doc, "Submitted", str(proposal.submitted_at.date()) if proposal.submitted_at else "Not submitted")
         doc.add_paragraph()
 
+        _heading(doc, "Village Lead", level=2)
+        _row(doc, "Name", village.village_lead_name or "—")
+        _row(doc, "Phone", village.village_lead_phone or "—")
+        doc.add_paragraph()
+
+        _heading(doc, "NGO Partner", level=2)
+        _row(doc, "NGO Name", village.ngo_name or "—")
+        _row(doc, "Contact Name", village.ngo_contact_name or "—")
+        _row(doc, "Phone", village.ngo_contact_phone or "—")
+        if village.ngo_whatsapp_phone:
+            _row(doc, "WhatsApp", village.ngo_whatsapp_phone)
+        doc.add_paragraph()
+
         _heading(doc, "Proposal Details", level=2)
         focus_areas = ", ".join([item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()])
         _row(doc, "Focus Areas", focus_areas or "")
@@ -176,6 +189,19 @@ async def export_plan(
         _row(doc, "End Date", str(plan.end_date) if plan.end_date else "—")
         if plan.frozen_at:
             _row(doc, "Frozen At", str(plan.frozen_at.date()))
+        doc.add_paragraph()
+
+        _heading(doc, "Village Lead", level=2)
+        _row(doc, "Name", village.village_lead_name or "—")
+        _row(doc, "Phone", village.village_lead_phone or "—")
+        doc.add_paragraph()
+
+        _heading(doc, "NGO Partner", level=2)
+        _row(doc, "NGO Name", village.ngo_name or "—")
+        _row(doc, "Contact Name", village.ngo_contact_name or "—")
+        _row(doc, "Phone", village.ngo_contact_phone or "—")
+        if village.ngo_whatsapp_phone:
+            _row(doc, "WhatsApp", village.ngo_whatsapp_phone)
         doc.add_paragraph()
 
         plan_data = plan.plan_data or {}
