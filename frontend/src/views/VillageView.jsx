@@ -669,6 +669,7 @@ function FundingTab({ api }) {
   const [form, setForm] = useState({
     funding_sent_date: "",
     funding_received_date: "",
+    funding_amount: "",
     funding_status_note: "",
   });
 
@@ -677,6 +678,7 @@ function FundingTab({ api }) {
       setForm({
         funding_sent_date: data.funding_sent_date || "",
         funding_received_date: data.funding_received_date || "",
+        funding_amount: data.funding_amount != null ? String(data.funding_amount) : "",
         funding_status_note: data.funding_status_note || "",
       });
     }).catch(() => {}).finally(() => setLoading(false));
@@ -693,6 +695,7 @@ function FundingTab({ api }) {
         ...prev,
         funding_sent_date: updated.funding_sent_date || "",
         funding_received_date: updated.funding_received_date || "",
+        funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
       }));
       alert("Funding details saved");
@@ -726,6 +729,16 @@ function FundingTab({ api }) {
           className="w-full border rounded px-3 py-2 text-sm"
           value={form.funding_received_date}
           onChange={(e) => setForm((p) => ({ ...p, funding_received_date: e.target.value }))}
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
+        <input
+          type="number"
+          className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
+          value={form.funding_amount}
+          readOnly
         />
       </div>
 

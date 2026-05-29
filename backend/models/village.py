@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from sqlalchemy import String, Boolean, Integer, DateTime, Date, Text, func
+from sqlalchemy import String, Boolean, Integer, DateTime, Date, Text, Float, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db import Base
@@ -28,6 +28,7 @@ class Village(Base):
     ngo_whatsapp_phone: Mapped[str] = mapped_column(String, nullable=True)
     funding_sent_date: Mapped[date] = mapped_column(Date, nullable=True)
     funding_received_date: Mapped[date] = mapped_column(Date, nullable=True)
+    funding_amount: Mapped[float] = mapped_column(Float, nullable=True)
     funding_status_note: Mapped[str] = mapped_column(Text, nullable=True)
     vdc_members: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

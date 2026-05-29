@@ -43,6 +43,7 @@ class OrgProfileOut(BaseModel):
 class FundingProfileIn(BaseModel):
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
+    funding_amount: float | None = None
     funding_status_note: str | None = None
 
 
@@ -50,6 +51,7 @@ class FundingProfileOut(BaseModel):
     village_id: str
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
+    funding_amount: float | None = None
     funding_status_note: str | None = None
 
 
@@ -77,6 +79,7 @@ def _serialize_funding(village: Village) -> FundingProfileOut:
         village_id=village.id,
         funding_sent_date=village.funding_sent_date,
         funding_received_date=village.funding_received_date,
+        funding_amount=village.funding_amount,
         funding_status_note=village.funding_status_note,
     )
 
@@ -212,10 +215,12 @@ async def update_village_funding(
     if not village:
         raise HTTPException(status_code=404, detail="Village not found")
 
-    if body.funding_received_date is not None:
-        village.funding_received_date = body.funding_received_date
-    if body.funding_status_note is not None:
-        village.funding_status_note = body.funding_status_note.strip() or None
+    payload = body.model_dump(exclude_unset=True)
+    if "funding_received_date" in payload:
+        village.funding_received_date = payload["funding_received_date"]
+    if "funding_status_note" in payload:
+        note = payload["funding_status_note"]
+        village.funding_status_note = note.strip() if isinstance(note, str) and note.strip() else None
 
     await db.commit()
     await db.refresh(village)
@@ -247,10 +252,14 @@ async def update_admin_village_funding(
     if not village:
         raise HTTPException(status_code=404, detail="Village not found")
 
-    if body.funding_sent_date is not None:
-        village.funding_sent_date = body.funding_sent_date
-    if body.funding_status_note is not None:
-        village.funding_status_note = body.funding_status_note.strip() or None
+    payload = body.model_dump(exclude_unset=True)
+    if "funding_sent_date" in payload:
+        village.funding_sent_date = payload["funding_sent_date"]
+    if "funding_amount" in payload:
+        village.funding_amount = payload["funding_amount"]
+    if "funding_status_note" in payload:
+        note = payload["funding_status_note"]
+        village.funding_status_note = note.strip() if isinstance(note, str) and note.strip() else None
 
     await db.commit()
     await db.refresh(village)

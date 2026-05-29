@@ -1184,6 +1184,7 @@ function FundingTab() {
   const [form, setForm] = useState({
     funding_sent_date: "",
     funding_received_date: "",
+    funding_amount: "",
     funding_status_note: "",
   });
 
@@ -1201,6 +1202,7 @@ function FundingTab() {
       setForm({
         funding_sent_date: data.funding_sent_date || "",
         funding_received_date: data.funding_received_date || "",
+        funding_amount: data.funding_amount != null ? String(data.funding_amount) : "",
         funding_status_note: data.funding_status_note || "",
       });
     }).catch(() => {}).finally(() => setLoading(false));
@@ -1212,12 +1214,14 @@ function FundingTab() {
     try {
       const updated = await api.updateVillageFunding(villageId, {
         funding_sent_date: form.funding_sent_date || null,
+        funding_amount: form.funding_amount === "" ? null : Number(form.funding_amount),
         funding_status_note: form.funding_status_note,
       });
       setForm((prev) => ({
         ...prev,
         funding_sent_date: updated.funding_sent_date || "",
         funding_received_date: updated.funding_received_date || "",
+        funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
       }));
       alert("Funding details saved");
@@ -1264,6 +1268,19 @@ function FundingTab() {
                 className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
                 value={form.funding_received_date}
                 readOnly
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.funding_amount}
+                onChange={(e) => setForm((p) => ({ ...p, funding_amount: e.target.value }))}
+                placeholder="Enter amount"
               />
             </div>
 
