@@ -31,7 +31,7 @@ export function createEmptyActivity() {
 export function createEmptyMilestone(index = 1) {
   return {
     milestone: "",
-    categories: ["H"],
+    categories: [],
     impact: "",
     activities: [createEmptyActivity()],
     label: `Milestone ${index}`,

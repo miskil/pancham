@@ -40,7 +40,7 @@ function MilestoneCard({
     const next = current.includes(code)
       ? current.filter((item) => item !== code)
       : [...current, code];
-    onChange({ ...milestone, categories: next.length ? next : current });
+    onChange({ ...milestone, categories: next });
   }
 
   return (

@@ -19,7 +19,7 @@ def empty_plan_data() -> dict:
         str(yr): [
             {
                 "milestone": "",
-                "categories": ["H"],
+                "categories": [],
                 "activities": [
                     {"activity": "", "poc": "", "amount": None, "notes": ""}
                 ],
