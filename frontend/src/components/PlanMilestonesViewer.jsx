@@ -195,7 +195,7 @@ function MilestoneCard({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_0.6fr_1.5fr]">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_0.6fr_2.2fr]">
                     <input
                       type="date"
                       className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
@@ -219,7 +219,7 @@ function MilestoneCard({
                       placeholder="% complete"
                     />
                     <input
-                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
+                      className="w-full min-w-0 border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
                       value={activity.notes || ""}
                       onChange={(e) => onChange({
                         ...milestone,
