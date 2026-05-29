@@ -32,6 +32,7 @@ export const getPlan = (id) => get(`/admin/plans/${id}`);
 export const updatePlan = (id, plan_data) => patch(`/admin/plans/${id}`, { plan_data });
 export const getWipPlan = (id) => get(`/admin/plans/${id}/wip`);
 export const acceptPlan = (id) => patch(`/admin/plans/${id}/accept`);
+export const requestPlanAmendment = (id, notes) => patch(`/admin/plans/${id}/request-amendment`, { notes });
 
 export const listStatusUpdates = (villageId) => get(`/admin/status-updates${villageId ? `?village_id=${villageId}` : ""}`);
 

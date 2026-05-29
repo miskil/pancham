@@ -24,6 +24,7 @@ class PlanOut(BaseModel):
     plan_data: dict
     frozen_at: str | None
     updated_at: str | None
+    reviewer_notes: str | None
 
     class Config:
         from_attributes = True
@@ -76,6 +77,7 @@ async def update_baseline(body: PlanBody, db: AsyncSession = Depends(get_db), us
 
     if body.submit:
         plan.status = "SUBMITTED"
+        plan.reviewer_notes = None
         village.internal_status = "PLAN_SUBMITTED"
     elif plan.status != "SUBMITTED":
         plan.status = "DRAFT"
@@ -121,6 +123,7 @@ def _out(p: ProjectPlan) -> PlanOut:
         plan_data=p.plan_data or empty_plan_data(),
         frozen_at=p.frozen_at.isoformat() if p.frozen_at else None,
         updated_at=p.updated_at.isoformat() if p.updated_at else None,
+        reviewer_notes=p.reviewer_notes,
     )
 
 

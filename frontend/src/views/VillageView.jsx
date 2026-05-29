@@ -909,7 +909,7 @@ function ProjectTab({ me, api }) {
   }
 
   const frozen = baseline.status === "FROZEN";
-  const baselineEditable = baseline.status === "DRAFT";
+  const baselineEditable = ["DRAFT", "AMENDMENT_REQUESTED"].includes(baseline.status);
   const baselineDataForView = draftData ?? baseline.plan_data;
   const currentWipData = draftData ?? wip?.plan_data;
   const exportPlanId = wip?.id || baseline?.id;
@@ -959,11 +959,16 @@ function ProjectTab({ me, api }) {
                   {saving ? "Saving..." : "Save Draft"}
                 </button>
                 <button onClick={submitPlan} disabled={saving} className="btn-sm bg-primary-700">
-                  {saving ? "Submitting..." : "Submit Plan"}
+                  {saving ? "Submitting..." : baseline.status === "AMENDMENT_REQUESTED" ? "Resubmit Plan" : "Submit Plan"}
                 </button>
               </div>
             )}
           </div>
+          {baseline.reviewer_notes && (
+            <div className="mb-3 bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+              <strong>Admin amendment notes:</strong> {baseline.reviewer_notes}
+            </div>
+          )}
           <PlanMilestonesViewer
             plan={{ ...baseline, plan_data: baselineDataForView }}
             readonly={!baselineEditable}

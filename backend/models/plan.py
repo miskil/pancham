@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from sqlalchemy import String, ForeignKey, DateTime, Date, func
+from sqlalchemy import String, ForeignKey, DateTime, Date, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db import Base
@@ -40,6 +40,7 @@ class ProjectPlan(Base):
     end_date: Mapped[date] = mapped_column(Date, nullable=True)
     frozen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_from_plan_id: Mapped[str] = mapped_column(String, ForeignKey("project_plans.id"), nullable=True)
+    reviewer_notes: Mapped[str] = mapped_column(Text, nullable=True)
     plan_data: Mapped[dict] = mapped_column(JSONB, nullable=False, default=empty_plan_data)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

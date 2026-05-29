@@ -850,6 +850,7 @@ function PlansTab() {
   const [draftData, setDraftData] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     api.listVillages()
@@ -862,6 +863,7 @@ function PlansTab() {
     setSelected(p);
     setDraftData(null);
     setError(null);
+    setNotes(p?.reviewer_notes || "");
   }
 
   const frozen = selected?.status === "FROZEN";
@@ -888,6 +890,16 @@ function PlansTab() {
       setPlans(updated);
       setSelected(updated.find((x) => x.id === selected.id) || null);
       setDraftData(null);
+    } catch (err) { setError(err.message); } finally { setSaving(false); }
+  }
+
+  async function requestAmendment() {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.requestPlanAmendment(selected.id, notes);
+      setSelected(updated);
+      setPlans((prev) => prev.map((p) => p.id === updated.id ? updated : p));
     } catch (err) { setError(err.message); } finally { setSaving(false); }
   }
 
@@ -921,13 +933,32 @@ function PlansTab() {
                   </button>
                 )}
                 {selected.status === "SUBMITTED" && (
-                  <button onClick={accept} disabled={saving} className="btn-sm bg-green-600">
-                    {saving ? "…" : "Accept & Freeze"}
-                  </button>
+                  <>
+                    <button onClick={requestAmendment} disabled={saving} className="btn-sm bg-yellow-500">
+                      {saving ? "…" : "Request Amendment"}
+                    </button>
+                    <button onClick={accept} disabled={saving} className="btn-sm bg-green-600">
+                      {saving ? "…" : "Accept & Freeze"}
+                    </button>
+                  </>
                 )}
                 <ExportDriveButton onExport={() => api.exportPlan(selected.id)} />
               </div>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Amendment Notes</label>
+              <textarea
+                className="w-full border rounded px-3 py-2 text-sm h-20"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes for village revision"
+              />
+            </div>
+            {selected.reviewer_notes && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+                <strong>Latest amendment notes:</strong> {selected.reviewer_notes}
+              </div>
+            )}
             <VillageOrgReadOnly village={selected ? villageMeta[selected.village_id] : null} />
             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
             <PlanMilestonesViewer

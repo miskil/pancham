@@ -22,6 +22,7 @@ class PlanOut(BaseModel):
     plan_data: dict
     frozen_at: str | None
     updated_at: str | None
+    reviewer_notes: str | None
 
     class Config:
         from_attributes = True
@@ -60,6 +61,10 @@ class PlanDataIn(BaseModel):
     plan_data: dict
 
 
+class PlanReviewIn(BaseModel):
+    notes: str | None = None
+
+
 @router.patch("/{plan_id}", response_model=PlanOut)
 async def update_plan(plan_id: str, body: PlanDataIn, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
     p = await _load(plan_id, db)
@@ -79,6 +84,7 @@ async def accept_plan(plan_id: str, db: AsyncSession = Depends(get_db), _=Depend
 
     now = datetime.now(timezone.utc)
     p.status = "FROZEN"
+    p.reviewer_notes = None
     p.frozen_at = now
 
     wip = ProjectPlan(
@@ -98,6 +104,29 @@ async def accept_plan(plan_id: str, db: AsyncSession = Depends(get_db), _=Depend
     return {"ok": True, "wip_plan_id": wip.id}
 
 
+@router.patch("/{plan_id}/request-amendment")
+async def request_plan_amendment(
+    plan_id: str,
+    body: PlanReviewIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(admin_only),
+):
+    p = await _load(plan_id, db)
+    if p.status != "SUBMITTED":
+        raise HTTPException(status_code=400, detail="Plan must be SUBMITTED to request amendment")
+
+    p.status = "AMENDMENT_REQUESTED"
+    p.reviewer_notes = body.notes
+
+    result = await db.execute(select(Village).where(Village.id == p.village_id))
+    village = result.scalar_one()
+    village.internal_status = "PLAN_REVIEW"
+
+    await db.commit()
+    await db.refresh(p)
+    return _out(p)
+
+
 def _out(p: ProjectPlan) -> PlanOut:
     return PlanOut(
         id=p.id,
@@ -108,6 +137,7 @@ def _out(p: ProjectPlan) -> PlanOut:
         plan_data=p.plan_data or empty_plan_data(),
         frozen_at=p.frozen_at.isoformat() if p.frozen_at else None,
         updated_at=p.updated_at.isoformat() if p.updated_at else None,
+        reviewer_notes=p.reviewer_notes,
     )
 
 
