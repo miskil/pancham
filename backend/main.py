@@ -9,7 +9,7 @@ from .auth import hash_password
 from .config import settings
 from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users, admin_maintenance
 from .routers import village_me, village_proposal, village_plan, village_status, village_evidence
-from .routers import threads, channels, donor, org
+from .routers import threads, channels, donor, org, funding
 
 app = FastAPI(title="Pancham API")
 
@@ -77,6 +77,7 @@ for r in [
     village_status.router,
     village_evidence.router,
     org.router,
+    funding.router,
     threads.router,
     channels.router,
     donor.router,

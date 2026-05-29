@@ -7,8 +7,9 @@ export const deactivateVillage = (id) => patch(`/admin/villages/${id}/deactivate
 export const getVillageEvidence = (id) => get(`/admin/villages/${id}/evidence`);
 export const getVillageOrg = (id) => get(`/admin/villages/${id}/org`);
 export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`, body);
-export const getVillageFunding = (id) => get(`/admin/villages/${id}/funding`);
-export const updateVillageFunding = (id, body) => patch(`/admin/villages/${id}/funding`, body);
+export const listVillageFundingRounds = (id) => get(`/admin/villages/${id}/funding-rounds`);
+export const createVillageFundingRound = (id, body) => post(`/admin/villages/${id}/funding-rounds`, body);
+export const updateVillageFundingRound = (villageId, roundId, body) => patch(`/admin/villages/${villageId}/funding-rounds/${roundId}`, body);
 
 // Village users
 export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}/users`);

@@ -5,6 +5,7 @@ from .proposal import Proposal, ProposalAmendment
 from .plan import ProjectPlan
 from .status_update import StatusUpdate, MediaFile
 from .thread import UpdateThread, VillageChannel
+from .funding import FundingRound
 
 __all__ = [
     "Village",
@@ -15,4 +16,5 @@ __all__ = [
     "MediaFile",
     "UpdateThread",
     "VillageChannel",
+    "FundingRound",
 ]

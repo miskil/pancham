@@ -1180,13 +1180,9 @@ function FundingTab() {
   const [villages, setVillages] = useState([]);
   const [villageId, setVillageId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    funding_sent_date: "",
-    funding_received_date: "",
-    funding_amount: "",
-    funding_status_note: "",
-  });
+  const [creating, setCreating] = useState(false);
+  const [savingRoundId, setSavingRoundId] = useState(null);
+  const [rounds, setRounds] = useState([]);
 
   useEffect(() => {
     api.listVillages().then((data) => {
@@ -1198,39 +1194,66 @@ function FundingTab() {
   useEffect(() => {
     if (!villageId) return;
     setLoading(true);
-    api.getVillageFunding(villageId).then((data) => {
-      setForm({
-        funding_sent_date: data.funding_sent_date || "",
-        funding_received_date: data.funding_received_date || "",
-        funding_amount: data.funding_amount != null ? String(data.funding_amount) : "",
-        funding_status_note: data.funding_status_note || "",
-      });
+    api.listVillageFundingRounds(villageId).then((data) => {
+      setRounds(data.map((item) => ({
+        ...item,
+        funding_sent_date: item.funding_sent_date || "",
+        funding_received_date: item.funding_received_date || "",
+        funding_amount: item.funding_amount != null ? String(item.funding_amount) : "",
+        funding_status_note: item.funding_status_note || "",
+      })));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [villageId]);
 
-  async function save() {
+  async function addRound() {
     if (!villageId) return;
-    setSaving(true);
+    setCreating(true);
     try {
-      const updated = await api.updateVillageFunding(villageId, {
-        funding_sent_date: form.funding_sent_date || null,
-        funding_amount: form.funding_amount === "" ? null : Number(form.funding_amount),
-        funding_status_note: form.funding_status_note,
+      const created = await api.createVillageFundingRound(villageId, {});
+      setRounds((prev) => [...prev, {
+        ...created,
+        funding_sent_date: created.funding_sent_date || "",
+        funding_received_date: created.funding_received_date || "",
+        funding_amount: created.funding_amount != null ? String(created.funding_amount) : "",
+        funding_status_note: created.funding_status_note || "",
+      }]);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function updateRound(roundId, key, value) {
+    setRounds((prev) => prev.map((item) => item.id === roundId ? { ...item, [key]: value } : item));
+  }
+
+  async function saveRound(roundId) {
+    if (!villageId) return;
+    const current = rounds.find((item) => item.id === roundId);
+    if (!current) return;
+    setSavingRoundId(roundId);
+    try {
+      const updated = await api.updateVillageFundingRound(villageId, roundId, {
+        funding_sent_date: current.funding_sent_date || null,
+        funding_amount: current.funding_amount === "" ? null : Number(current.funding_amount),
+        funding_status_note: current.funding_status_note,
       });
-      setForm((prev) => ({
-        ...prev,
+      setRounds((prev) => prev.map((item) => item.id === roundId ? {
+        ...updated,
         funding_sent_date: updated.funding_sent_date || "",
         funding_received_date: updated.funding_received_date || "",
         funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
-      }));
-      alert("Funding details saved");
+      } : item));
     } catch (err) {
       alert(err.message);
     } finally {
-      setSaving(false);
+      setSavingRoundId(null);
     }
   }
+
+  const totalFunding = rounds.reduce((sum, item) => sum + (Number(item.funding_amount) || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -1248,57 +1271,54 @@ function FundingTab() {
       </div>
 
       <div className="bg-white rounded-xl border p-5 space-y-4">
-        {loading && <p className="text-sm text-gray-400">Loading funding details...</p>}
-        {!loading && (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date (Admin)</label>
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.funding_sent_date}
-                onChange={(e) => setForm((p) => ({ ...p, funding_sent_date: e.target.value }))}
-              />
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-gray-500">Total Funding</p>
+            <p className="text-2xl font-semibold text-gray-800">₹ {totalFunding.toLocaleString("en-IN")}</p>
+          </div>
+          <button onClick={addRound} disabled={creating || !villageId} className="btn-sm bg-primary-700 disabled:opacity-60">
+            {creating ? "Adding..." : "Add Funding Round"}
+          </button>
+        </div>
+        {loading && <p className="text-sm text-gray-400">Loading funding rounds...</p>}
+        {!loading && rounds.length === 0 && <p className="text-sm text-gray-400">No funding rounds yet.</p>}
+        {!loading && rounds.map((round) => (
+          <div key={round.id} className="rounded-xl border p-4 space-y-4 bg-gray-50">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold text-gray-700">Round {round.round_number}</h3>
+              <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id} className="btn-sm bg-primary-700 disabled:opacity-60">
+                {savingRoundId === round.id ? "Saving..." : "Save Round"}
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date (Village)</label>
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
-                value={form.funding_received_date}
-                readOnly
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-lg border bg-white p-3 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sender (Admin)</p>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date</label>
+                  <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_sent_date} onChange={(e) => updateRound(round.id, "funding_sent_date", e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
+                  <input type="number" step="0.01" min="0" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_amount} onChange={(e) => updateRound(round.id, "funding_amount", e.target.value)} placeholder="Enter amount" />
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.funding_amount}
-                onChange={(e) => setForm((p) => ({ ...p, funding_amount: e.target.value }))}
-                placeholder="Enter amount"
-              />
+              <div className="rounded-lg border bg-white p-3 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receiver (Village)</p>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date</label>
+                  <input type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_received_date} readOnly />
+                </div>
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
-              <textarea
-                className="w-full border rounded px-3 py-2 text-sm h-24"
-                value={form.funding_status_note}
-                onChange={(e) => setForm((p) => ({ ...p, funding_status_note: e.target.value }))}
-                placeholder="Shared note visible to admin and village"
-              />
+              <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.funding_status_note} onChange={(e) => updateRound(round.id, "funding_status_note", e.target.value)} placeholder="Shared note visible to admin and village" />
             </div>
-
-            <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
-              {saving ? "Saving..." : "Save Funding"}
-            </button>
-          </>
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );

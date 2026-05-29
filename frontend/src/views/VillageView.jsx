@@ -43,8 +43,8 @@ function makeApi(token) {
     getMe: () => f("/village/me"),
     getOrg: () => f("/village/org"),
     updateOrg: (b) => f("/village/org", { method: "PATCH", body: JSON.stringify(b) }),
-    getFunding: () => f("/village/funding"),
-    updateFunding: (b) => f("/village/funding", { method: "PATCH", body: JSON.stringify(b) }),
+    listFundingRounds: () => f("/village/funding-rounds"),
+    updateFundingRound: (roundId, b) => f(`/village/funding-rounds/${roundId}`, { method: "PATCH", body: JSON.stringify(b) }),
     getProposal: () => f("/village/proposal"),
     createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
@@ -665,96 +665,100 @@ function OrgTab({ api }) {
 
 function FundingTab({ api }) {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    funding_sent_date: "",
-    funding_received_date: "",
-    funding_amount: "",
-    funding_status_note: "",
-  });
+  const [savingRoundId, setSavingRoundId] = useState(null);
+  const [rounds, setRounds] = useState([]);
 
   useEffect(() => {
-    api.getFunding().then((data) => {
-      setForm({
-        funding_sent_date: data.funding_sent_date || "",
-        funding_received_date: data.funding_received_date || "",
-        funding_amount: data.funding_amount != null ? String(data.funding_amount) : "",
-        funding_status_note: data.funding_status_note || "",
-      });
+    api.listFundingRounds().then((data) => {
+      setRounds(data.map((item) => ({
+        ...item,
+        funding_sent_date: item.funding_sent_date || "",
+        funding_received_date: item.funding_received_date || "",
+        funding_amount: item.funding_amount != null ? String(item.funding_amount) : "",
+        funding_status_note: item.funding_status_note || "",
+      })));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [api]);
 
-  async function save() {
-    setSaving(true);
+  function updateRound(roundId, key, value) {
+    setRounds((prev) => prev.map((item) => item.id === roundId ? { ...item, [key]: value } : item));
+  }
+
+  async function saveRound(roundId) {
+    const current = rounds.find((item) => item.id === roundId);
+    if (!current) return;
+    setSavingRoundId(roundId);
     try {
-      const updated = await api.updateFunding({
-        funding_received_date: form.funding_received_date || null,
-        funding_status_note: form.funding_status_note,
+      const updated = await api.updateFundingRound(roundId, {
+        funding_received_date: current.funding_received_date || null,
+        funding_status_note: current.funding_status_note,
       });
-      setForm((prev) => ({
-        ...prev,
+      setRounds((prev) => prev.map((item) => item.id === roundId ? {
+        ...updated,
         funding_sent_date: updated.funding_sent_date || "",
         funding_received_date: updated.funding_received_date || "",
         funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
-      }));
-      alert("Funding details saved");
+      } : item));
     } catch (err) {
       alert(err.message);
     } finally {
-      setSaving(false);
+      setSavingRoundId(null);
     }
   }
 
+  const totalFunding = rounds.reduce((sum, item) => sum + (Number(item.funding_amount) || 0), 0);
+
   if (loading) {
-    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading funding details...</div>;
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading funding rounds...</div>;
   }
 
   return (
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date (Admin)</label>
-        <input
-          type="date"
-          className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
-          value={form.funding_sent_date}
-          readOnly
-        />
+        <p className="text-xs text-gray-500">Total Funding</p>
+        <p className="text-2xl font-semibold text-gray-800">₹ {totalFunding.toLocaleString("en-IN")}</p>
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date (Village)</label>
-        <input
-          type="date"
-          className="w-full border rounded px-3 py-2 text-sm"
-          value={form.funding_received_date}
-          onChange={(e) => setForm((p) => ({ ...p, funding_received_date: e.target.value }))}
-        />
-      </div>
+      {rounds.length === 0 && <p className="text-sm text-gray-400">No funding rounds yet.</p>}
 
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
-        <input
-          type="number"
-          className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
-          value={form.funding_amount}
-          readOnly
-        />
-      </div>
+      {rounds.map((round) => (
+        <div key={round.id} className="rounded-xl border p-4 space-y-4 bg-gray-50">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold text-gray-700">Round {round.round_number}</h3>
+            <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id} className="btn-sm bg-primary-700 disabled:opacity-60">
+              {savingRoundId === round.id ? "Saving..." : "Save Round"}
+            </button>
+          </div>
 
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
-        <textarea
-          className="w-full border rounded px-3 py-2 text-sm h-24"
-          value={form.funding_status_note}
-          onChange={(e) => setForm((p) => ({ ...p, funding_status_note: e.target.value }))}
-          placeholder="Shared note visible to admin and village"
-        />
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-lg border bg-white p-3 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sender (Admin)</p>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date</label>
+                <input type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_sent_date} readOnly />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
+                <input type="number" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_amount} readOnly />
+              </div>
+            </div>
 
-      <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
-        {saving ? "Saving..." : "Save Funding"}
-      </button>
+            <div className="rounded-lg border bg-white p-3 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receiver (Village)</p>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date</label>
+                <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_received_date} onChange={(e) => updateRound(round.id, "funding_received_date", e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.funding_status_note} onChange={(e) => updateRound(round.id, "funding_status_note", e.target.value)} placeholder="Shared note visible to admin and village" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
