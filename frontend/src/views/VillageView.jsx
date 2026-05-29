@@ -953,7 +953,7 @@ function ProjectTab({ me, api }) {
             <span className="text-xs bg-gray-100 text-gray-500 rounded px-2 py-0.5">
               {baseline.status === "FROZEN" ? "Frozen - read only" : baseline.status}
             </span>
-            {baselineEditable && draftData && (
+            {baselineEditable && (
               <div className="ml-auto flex gap-2">
                 <button onClick={saveBaselineDraft} disabled={saving} className="btn-sm bg-gray-400">
                   {saving ? "Saving..." : "Save Draft"}
