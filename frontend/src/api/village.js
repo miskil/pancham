@@ -3,6 +3,8 @@ import { get, post, patch, del, postForm, download } from "./client";
 export const getMe = () => get("/village/me");
 export const getOrg = () => get("/village/org");
 export const updateOrg = (body) => patch("/village/org", body);
+export const getFunding = () => get("/village/funding");
+export const updateFunding = (body) => patch("/village/funding", body);
 
 export const getProposal = () => get("/village/proposal");
 export const createProposal = (body) => post("/village/proposal", body);

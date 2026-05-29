@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from datetime import date
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,6 +40,19 @@ class OrgProfileOut(BaseModel):
     vdc_members: list[VdcMember]
 
 
+class FundingProfileIn(BaseModel):
+    funding_sent_date: date | None = None
+    funding_received_date: date | None = None
+    funding_status_note: str | None = None
+
+
+class FundingProfileOut(BaseModel):
+    village_id: str
+    funding_sent_date: date | None = None
+    funding_received_date: date | None = None
+    funding_status_note: str | None = None
+
+
 def _serialize_org(village: Village) -> OrgProfileOut:
     members = village.vdc_members or []
     return OrgProfileOut(
@@ -56,6 +70,15 @@ def _serialize_org(village: Village) -> OrgProfileOut:
 def _validate_members_limit(members: list[VdcMember] | None) -> None:
     if members is not None and len(members) > 5:
         raise HTTPException(status_code=400, detail="Maximum 5 VDC members are allowed")
+
+
+def _serialize_funding(village: Village) -> FundingProfileOut:
+    return FundingProfileOut(
+        village_id=village.id,
+        funding_sent_date=village.funding_sent_date,
+        funding_received_date=village.funding_received_date,
+        funding_status_note=village.funding_status_note,
+    )
 
 
 @router.get("/village/org", response_model=OrgProfileOut)
@@ -164,3 +187,71 @@ async def update_admin_village_org(
     await db.commit()
     await db.refresh(village)
     return _serialize_org(village)
+
+
+@router.get("/village/funding", response_model=FundingProfileOut)
+async def get_village_funding(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(village_only),
+):
+    result = await db.execute(select(Village).where(Village.id == user["village_id"]))
+    village = result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+    return _serialize_funding(village)
+
+
+@router.patch("/village/funding", response_model=FundingProfileOut)
+async def update_village_funding(
+    body: FundingProfileIn,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(village_only),
+):
+    result = await db.execute(select(Village).where(Village.id == user["village_id"]))
+    village = result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+
+    if body.funding_received_date is not None:
+        village.funding_received_date = body.funding_received_date
+    if body.funding_status_note is not None:
+        village.funding_status_note = body.funding_status_note.strip() or None
+
+    await db.commit()
+    await db.refresh(village)
+    return _serialize_funding(village)
+
+
+@router.get("/admin/villages/{village_id}/funding", response_model=FundingProfileOut)
+async def get_admin_village_funding(
+    village_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(admin_only),
+):
+    result = await db.execute(select(Village).where(Village.id == village_id))
+    village = result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+    return _serialize_funding(village)
+
+
+@router.patch("/admin/villages/{village_id}/funding", response_model=FundingProfileOut)
+async def update_admin_village_funding(
+    village_id: str,
+    body: FundingProfileIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(admin_only),
+):
+    result = await db.execute(select(Village).where(Village.id == village_id))
+    village = result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+
+    if body.funding_sent_date is not None:
+        village.funding_sent_date = body.funding_sent_date
+    if body.funding_status_note is not None:
+        village.funding_status_note = body.funding_status_note.strip() or None
+
+    await db.commit()
+    await db.refresh(village)
+    return _serialize_funding(village)

@@ -7,6 +7,8 @@ export const deactivateVillage = (id) => patch(`/admin/villages/${id}/deactivate
 export const getVillageEvidence = (id) => get(`/admin/villages/${id}/evidence`);
 export const getVillageOrg = (id) => get(`/admin/villages/${id}/org`);
 export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`, body);
+export const getVillageFunding = (id) => get(`/admin/villages/${id}/funding`);
+export const updateVillageFunding = (id, body) => patch(`/admin/villages/${id}/funding`, body);
 
 // Village users
 export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}/users`);

@@ -8,7 +8,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Status"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Funding", "Plan", "Status"];
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
   PLAN: 50,
@@ -43,6 +43,8 @@ function makeApi(token) {
     getMe: () => f("/village/me"),
     getOrg: () => f("/village/org"),
     updateOrg: (b) => f("/village/org", { method: "PATCH", body: JSON.stringify(b) }),
+    getFunding: () => f("/village/funding"),
+    updateFunding: (b) => f("/village/funding", { method: "PATCH", body: JSON.stringify(b) }),
     getProposal: () => f("/village/proposal"),
     createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
@@ -162,6 +164,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab api={api} />}
+        {tab === "Funding" && <FundingTab api={api} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
       </div>
@@ -656,6 +659,89 @@ function OrgTab({ api }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function FundingTab({ api }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    funding_sent_date: "",
+    funding_received_date: "",
+    funding_status_note: "",
+  });
+
+  useEffect(() => {
+    api.getFunding().then((data) => {
+      setForm({
+        funding_sent_date: data.funding_sent_date || "",
+        funding_received_date: data.funding_received_date || "",
+        funding_status_note: data.funding_status_note || "",
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [api]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await api.updateFunding({
+        funding_received_date: form.funding_received_date || null,
+        funding_status_note: form.funding_status_note,
+      });
+      setForm((prev) => ({
+        ...prev,
+        funding_sent_date: updated.funding_sent_date || "",
+        funding_received_date: updated.funding_received_date || "",
+        funding_status_note: updated.funding_status_note || "",
+      }));
+      alert("Funding details saved");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading funding details...</div>;
+  }
+
+  return (
+    <div className="bg-white rounded-xl border p-5 space-y-4">
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date (Admin)</label>
+        <input
+          type="date"
+          className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
+          value={form.funding_sent_date}
+          readOnly
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date (Village)</label>
+        <input
+          type="date"
+          className="w-full border rounded px-3 py-2 text-sm"
+          value={form.funding_received_date}
+          onChange={(e) => setForm((p) => ({ ...p, funding_received_date: e.target.value }))}
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
+        <textarea
+          className="w-full border rounded px-3 py-2 text-sm h-24"
+          value={form.funding_status_note}
+          onChange={(e) => setForm((p) => ({ ...p, funding_status_note: e.target.value }))}
+          placeholder="Shared note visible to admin and village"
+        />
+      </div>
+
+      <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
+        {saving ? "Saving..." : "Save Funding"}
+      </button>
     </div>
   );
 }

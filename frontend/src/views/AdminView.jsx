@@ -7,7 +7,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
-const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Org", "Users"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Funding", "Org", "Users"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -98,6 +98,7 @@ export function AdminView() {
         {tab === "Proposals" && <ProposalsTab />}
         {tab === "Plans" && <PlansTab />}
         {tab === "Status" && <StatusTab />}
+        {tab === "Funding" && <FundingTab />}
         {tab === "Org" && <OrgTab />}
         {tab === "Users" && <AdminUsersTab />}
       </div>
@@ -1171,6 +1172,117 @@ function OrgTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function FundingTab() {
+  const [villages, setVillages] = useState([]);
+  const [villageId, setVillageId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    funding_sent_date: "",
+    funding_received_date: "",
+    funding_status_note: "",
+  });
+
+  useEffect(() => {
+    api.listVillages().then((data) => {
+      setVillages(data);
+      if (data.length) setVillageId(data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!villageId) return;
+    setLoading(true);
+    api.getVillageFunding(villageId).then((data) => {
+      setForm({
+        funding_sent_date: data.funding_sent_date || "",
+        funding_received_date: data.funding_received_date || "",
+        funding_status_note: data.funding_status_note || "",
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [villageId]);
+
+  async function save() {
+    if (!villageId) return;
+    setSaving(true);
+    try {
+      const updated = await api.updateVillageFunding(villageId, {
+        funding_sent_date: form.funding_sent_date || null,
+        funding_status_note: form.funding_status_note,
+      });
+      setForm((prev) => ({
+        ...prev,
+        funding_sent_date: updated.funding_sent_date || "",
+        funding_received_date: updated.funding_received_date || "",
+        funding_status_note: updated.funding_status_note || "",
+      }));
+      alert("Funding details saved");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-600 whitespace-nowrap">Village</label>
+        <select
+          className="flex-1 border rounded px-3 py-2 text-sm"
+          value={villageId}
+          onChange={(e) => setVillageId(e.target.value)}
+        >
+          {villages.map((v) => (
+            <option key={v.id} value={v.id}>{v.name} ({v.district})</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white rounded-xl border p-5 space-y-4">
+        {loading && <p className="text-sm text-gray-400">Loading funding details...</p>}
+        {!loading && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Sent Date (Admin)</label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.funding_sent_date}
+                onChange={(e) => setForm((p) => ({ ...p, funding_sent_date: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date (Village)</label>
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
+                value={form.funding_received_date}
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
+              <textarea
+                className="w-full border rounded px-3 py-2 text-sm h-24"
+                value={form.funding_status_note}
+                onChange={(e) => setForm((p) => ({ ...p, funding_status_note: e.target.value }))}
+                placeholder="Shared note visible to admin and village"
+              />
+            </div>
+
+            <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
+              {saving ? "Saving..." : "Save Funding"}
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
