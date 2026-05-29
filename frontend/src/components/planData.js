@@ -24,6 +24,8 @@ export function createEmptyActivity() {
     activity: "",
     poc: "",
     amount: null,
+    end_date: "",
+    pct_complete: "",
     notes: "",
   };
 }

@@ -35,6 +35,12 @@ function MilestoneCard({
 }) {
   const milestoneTotal = (milestone.activities || []).reduce((sum, activity) => sum + (parseFloat(activity.amount) || 0), 0);
 
+  const activities = milestone.activities || [];
+  const filledActivities = activities.filter((a) => a.pct_complete !== "" && a.pct_complete != null);
+  const milestonePct = filledActivities.length > 0
+    ? Math.round(filledActivities.reduce((sum, a) => sum + (parseFloat(a.pct_complete) || 0), 0) / filledActivities.length)
+    : null;
+
   function toggleCategory(code) {
     const current = milestone.categories || [];
     const next = current.includes(code)
@@ -81,12 +87,17 @@ function MilestoneCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          {milestonePct != null && (
+            <span className="rounded-full bg-forest-50 border border-forest-200 px-2.5 py-0.5 text-xs font-semibold text-forest-700">
+              {milestonePct}%
+            </span>
+          )}
           <span className="rounded-full bg-sand-100 px-3 py-1 text-xs font-semibold text-ink-700">
-            Total {currency === "INR" ? "₹" : "$"}{currency === "INR" ? milestoneTotal.toLocaleString("en-IN") : (milestoneTotal / rate).toFixed(2)}
+            {currency === "INR" ? "₹" : "$"}{currency === "INR" ? milestoneTotal.toLocaleString("en-IN") : (milestoneTotal / rate).toFixed(2)}
           </span>
           {!readonly && onRemove && (
-            <button onClick={onRemove} className="btn-secondary text-xs px-3 py-1.5">
-              Remove milestone
+            <button onClick={onRemove} title="Remove milestone" className="ml-1 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none">
+              &times;
             </button>
           )}
         </div>
@@ -132,64 +143,91 @@ function MilestoneCard({
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500">
                       <span>POC: {activity.poc || "—"}</span>
                       <span>Amount: {amountLabel || "—"}</span>
+                      {activity.end_date && <span>Due: {activity.end_date}</span>}
+                      {activity.pct_complete !== "" && activity.pct_complete != null && <span>{activity.pct_complete}% complete</span>}
                     </div>
                   </div>
                   {activity.notes && <p className="text-xs text-ink-600 whitespace-pre-wrap">{activity.notes}</p>}
                 </>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1.5fr_1fr_0.7fr_auto]">
-                    <input
-                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
-                      value={activity.activity || ""}
-                      onChange={(e) => onChange({
-                        ...milestone,
-                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, activity: e.target.value } : item),
-                      })}
-                      placeholder="Activity"
-                    />
-                    <input
-                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
-                      value={activity.poc || ""}
-                      onChange={(e) => onChange({
-                        ...milestone,
-                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, poc: e.target.value } : item),
-                      })}
-                      placeholder="POC"
-                    />
-                    <input
-                      type="number"
-                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
-                      value={currency === "USD"
-                        ? (activity.amount != null ? (activity.amount / rate).toFixed(2) : "")
-                        : (activity.amount ?? "")}
-                      onChange={(e) => {
-                        const value = e.target.value ? parseFloat(e.target.value) : null;
-                        onChange({
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 grid grid-cols-1 gap-2 md:grid-cols-[1.5fr_1fr_0.7fr]">
+                      <input
+                        className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
+                        value={activity.activity || ""}
+                        onChange={(e) => onChange({
                           ...milestone,
-                          activities: milestone.activities.map((item, idx) => idx === activityIndex
-                            ? { ...item, amount: currency === "USD" && value != null ? value * rate : value }
-                            : item),
-                        });
-                      }}
-                      placeholder="Amount"
-                    />
-                      {onRemoveActivity && (
-                        <button onClick={() => onRemoveActivity(activityIndex)} className="btn-secondary text-xs px-3 py-2">
-                        Remove
+                          activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, activity: e.target.value } : item),
+                        })}
+                        placeholder="Activity"
+                      />
+                      <input
+                        className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
+                        value={activity.poc || ""}
+                        onChange={(e) => onChange({
+                          ...milestone,
+                          activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, poc: e.target.value } : item),
+                        })}
+                        placeholder="POC"
+                      />
+                      <input
+                        type="number"
+                        className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
+                        value={currency === "USD"
+                          ? (activity.amount != null ? (activity.amount / rate).toFixed(2) : "")
+                          : (activity.amount ?? "")}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseFloat(e.target.value) : null;
+                          onChange({
+                            ...milestone,
+                            activities: milestone.activities.map((item, idx) => idx === activityIndex
+                              ? { ...item, amount: currency === "USD" && value != null ? value * rate : value }
+                              : item),
+                          });
+                        }}
+                        placeholder="Amount"
+                      />
+                    </div>
+                    {onRemoveActivity && (
+                      <button onClick={() => onRemoveActivity(activityIndex)} title="Remove activity" className="mt-2 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none flex-shrink-0">
+                        &times;
                       </button>
                     )}
                   </div>
-                  <textarea
-                    rows={2}
-                    className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white resize-none"
-                    value={activity.notes || ""}
-                    onChange={(e) => onChange({
-                      ...milestone,
-                      activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, notes: e.target.value } : item),
-                    })}
-                    placeholder="Activity notes"
-                  />
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_0.6fr_1.5fr]">
+                    <input
+                      type="date"
+                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
+                      value={activity.end_date || ""}
+                      onChange={(e) => onChange({
+                        ...milestone,
+                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, end_date: e.target.value } : item),
+                      })}
+                      placeholder="End date"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
+                      value={activity.pct_complete ?? ""}
+                      onChange={(e) => onChange({
+                        ...milestone,
+                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, pct_complete: e.target.value } : item),
+                      })}
+                      placeholder="% complete"
+                    />
+                    <input
+                      className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
+                      value={activity.notes || ""}
+                      onChange={(e) => onChange({
+                        ...milestone,
+                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, notes: e.target.value } : item),
+                      })}
+                      placeholder="Notes"
+                    />
+                  </div>
                 </>
               )}
             </div>
