@@ -8,7 +8,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Project", "Status"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Status"];
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
   PLAN: 50,
@@ -141,7 +141,7 @@ export function VillageView({ previewToken } = {}) {
 
       <div className="tabbar">
         {TABS.map((t) => {
-          const locked = t === "Project" && !proposalAccepted;
+          const locked = t === "Plan" && !proposalAccepted;
           return (
             <button
               key={t}
@@ -161,7 +161,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab api={api} />}
-        {tab === "Project" && proposalAccepted && <ProjectTab me={me} api={api} />}
+        {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
       </div>
       </div>
