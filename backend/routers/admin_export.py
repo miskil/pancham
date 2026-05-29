@@ -139,7 +139,8 @@ async def export_proposal(
             _heading(doc, "Reviewer Notes", level=2)
             doc.add_paragraph(proposal.reviewer_notes)
 
-        filename = f"Proposal_{_ascii_safe_filename(village.name if village else proposal.village_id)}_{date.today()}.docx"
+        village_slug = _ascii_safe_filename(village.name if village else proposal.village_id)
+        filename = f"{village_slug}-Proposal-{date.today()}.docx"
         content = _docx_bytes(doc)
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(
@@ -233,7 +234,8 @@ async def export_plan(
                     cells[3].text = str(amount) if amount is not None else "—"
                 doc.add_paragraph()
 
-        filename = f"Plan_{plan.version_type}_{_ascii_safe_filename(village.name if village else plan.village_id)}_{date.today()}.docx"
+        village_slug = _ascii_safe_filename(village.name if village else plan.village_id)
+        filename = f"{village_slug}-Plan-{date.today()}.docx"
         content = _docx_bytes(doc)
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(
