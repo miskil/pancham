@@ -7,7 +7,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
-const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Org"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Org", "Users"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -99,6 +99,7 @@ export function AdminView() {
         {tab === "Plans" && <PlansTab />}
         {tab === "Status" && <StatusTab />}
         {tab === "Org" && <OrgTab />}
+        {tab === "Users" && <AdminUsersTab />}
       </div>
       </div>
     </div>
@@ -217,6 +218,7 @@ function StatCard({ label, value }) {
 
 function OnboardTab({ villageViewEnabled, onPreview }) {
   const [villages, setVillages] = useState([]);
+  const [expandedUsers, setExpandedUsers] = useState(null); // village id
   const [form, setForm] = useState({
     name: "",
     district: "",
@@ -342,10 +344,41 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
           </div>
         </form>
         {result && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded text-sm">
-            <p className="font-medium text-green-800">Village created</p>
-            <p>Username: <strong>{result.login_username}</strong></p>
-            <p>Temp password: <strong>{result.temp_password}</strong></p>
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-sm space-y-3">
+            <p className="font-semibold text-green-800">Village created — share these credentials with the village lead:</p>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
+                <span className="text-gray-500 text-xs w-24 shrink-0">Username</span>
+                <span className="font-mono font-semibold text-gray-900 flex-1">{result.login_username}</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(result.login_username)}
+                  className="text-xs text-primary-700 hover:text-primary-900 font-medium shrink-0"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
+                <span className="text-gray-500 text-xs w-24 shrink-0">Password</span>
+                <span className="font-mono font-semibold text-gray-900 flex-1">{result.temp_password}</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(result.temp_password)}
+                  className="text-xs text-primary-700 hover:text-primary-900 font-medium shrink-0"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(
+                `Pancham login details for ${result.name || "your village"}:\nUsername: ${result.login_username}\nPassword: ${result.temp_password}`
+              )}
+              className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-xs font-medium text-green-800 hover:bg-green-100 transition-colors"
+            >
+              Copy full message (for WhatsApp / SMS)
+            </button>
           </div>
         )}
       </div>
@@ -385,7 +418,11 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
                         View as Village
                       </button>
                     )}
+                    <button onClick={() => setExpandedUsers(expandedUsers === v.id ? null : v.id)} className="text-xs text-gray-500 hover:underline">
+                      Manage Users
+                    </button>
                   </div>
+                  {expandedUsers === v.id && <VillageUsersPanel villageId={v.id} villageName={v.name} />}
                 </div>
               ))}
             </div>
@@ -397,20 +434,33 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
                   <th className="pb-2">NGO</th><th className="pb-2">NGO Contact</th>
                   <th className="pb-2">Village Lead</th>
                   <th className="pb-2">Stage</th><th className="pb-2">Active</th>
+                  <th className="pb-2">Users</th>
                   {villageViewEnabled && <th className="pb-2"></th>}
                 </tr></thead>
                 <tbody>
                   {villages.map((v) => (
-                    <tr key={v.id} className="border-b last:border-0">
-                      <td className="py-2">{v.name}</td>
-                      <td className="py-2 text-gray-500">{v.district}</td>
-                      <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
-                      <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
-                      <td className="py-2 text-gray-600">{v.village_lead_name || v.village_lead_phone || "-"}</td>
-                      <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
-                      <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
-                      {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
-                    </tr>
+                    <>
+                      <tr key={v.id} className="border-b last:border-0">
+                        <td className="py-2">{v.name}</td>
+                        <td className="py-2 text-gray-500">{v.district}</td>
+                        <td className="py-2 text-gray-600">{v.ngo_name || "-"}</td>
+                        <td className="py-2 text-gray-600">{v.ngo_contact_name || v.ngo_contact_phone || "-"}</td>
+                        <td className="py-2 text-gray-600">{v.village_lead_name || v.village_lead_phone || "-"}</td>
+                        <td className="py-2"><span className="bg-primary-100 text-primary-800 text-xs rounded px-2 py-0.5">{v.stage}</span></td>
+                        <td className="py-2">{v.is_active ? "✓" : <button onClick={() => api.deactivateVillage(v.id).then(() => setVillages((p) => p.map((x) => x.id === v.id ? { ...x, is_active: false } : x)))} className="text-red-500 text-xs">Deactivate</button>}</td>
+                        <td className="py-2">
+                          <button onClick={() => setExpandedUsers(expandedUsers === v.id ? null : v.id)} className="text-xs text-primary-600 hover:underline">
+                            {expandedUsers === v.id ? "Hide" : "Manage"}
+                          </button>
+                        </td>
+                        {villageViewEnabled && <td className="py-2"><button onClick={() => previewVillage(v.id, v.name)} className="text-xs text-primary-600 hover:underline">View as Village</button></td>}
+                      </tr>
+                      {expandedUsers === v.id && (
+                        <tr><td colSpan={villageViewEnabled ? 9 : 8} className="pb-3">
+                          <VillageUsersPanel villageId={v.id} villageName={v.name} />
+                        </td></tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -422,9 +472,215 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
   );
 }
 
+// ── Village Users Panel ──────────────────────────────────────────────────────
+function VillageUsersPanel({ villageId, villageName }) {
+  const [users, setUsers] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newResult, setNewResult] = useState(null);
+
+  useEffect(() => {
+    api.listVillageUsers(villageId).then(setUsers).catch(() => setUsers([]));
+  }, [villageId]);
+
+  async function addUser() {
+    if (adding) return;
+    setAdding(true);
+    setNewResult(null);
+    try {
+      const u = await api.addVillageUser(villageId, {
+        display_name: newName || null,
+        login_username: newUsername || null,
+      });
+      setNewResult(u);
+      setUsers((prev) => [...(prev || []), u]);
+      setNewName("");
+      setNewUsername("");
+    } catch (err) { alert(err.message); }
+    finally { setAdding(false); }
+  }
+
+  async function resetPw(userId) {
+    try {
+      const r = await api.resetVillageUserPassword(villageId, userId);
+      alert(`New password for ${r.login_username}:\n${r.temp_password}`);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function deactivate(userId) {
+    if (!confirm("Deactivate this user?")) return;
+    await api.deactivateVillageUser(villageId, userId);
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_active: false } : u));
+  }
+
+  return (
+    <div className="mt-3 border rounded-lg bg-gray-50 p-3 space-y-3 text-sm">
+      <p className="font-medium text-gray-700">Logins for {villageName}</p>
+      {users === null ? (
+        <p className="text-gray-400 text-xs">Loading…</p>
+      ) : users.length === 0 ? (
+        <p className="text-gray-400 text-xs">No users yet.</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead><tr className="text-left text-gray-500 border-b">
+            <th className="pb-1">Username</th><th className="pb-1">Name</th>
+            <th className="pb-1">Active</th><th className="pb-1"></th>
+          </tr></thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-b last:border-0">
+                <td className="py-1 font-mono">{u.login_username}</td>
+                <td className="py-1 text-gray-600">{u.display_name || "—"}</td>
+                <td className="py-1">{u.is_active ? "✓" : <span className="text-red-500">off</span>}</td>
+                <td className="py-1 flex gap-2">
+                  <button onClick={() => resetPw(u.id)} className="text-primary-600 hover:underline">Reset pw</button>
+                  {u.is_active && (
+                    <button onClick={() => deactivate(u.id)} className="text-red-500 hover:underline">Deactivate</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {newResult && (
+        <div className="bg-green-50 border border-green-200 rounded p-2 space-y-1 text-xs">
+          <p className="font-semibold text-green-800">New user created:</p>
+          <p>Username: <span className="font-mono">{newResult.login_username}</span></p>
+          <p>Password: <span className="font-mono">{newResult.temp_password}</span></p>
+          <button
+            onClick={() => navigator.clipboard.writeText(
+              `Pancham login:\nUsername: ${newResult.login_username}\nPassword: ${newResult.temp_password}`
+            )}
+            className="mt-1 rounded border border-green-300 bg-white px-2 py-1 text-green-800 hover:bg-green-100"
+          >Copy for WhatsApp</button>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 items-end pt-1">
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">Name (optional)</label>
+          <input value={newName} onChange={(e) => setNewName(e.target.value)}
+            className="border rounded px-2 py-1 text-xs w-36" placeholder="e.g. Sunita" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">Username (optional)</label>
+          <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
+            className="border rounded px-2 py-1 text-xs w-36" placeholder="auto-generated" />
+        </div>
+        <button onClick={addUser} disabled={adding}
+          className="bg-primary-700 text-white rounded px-3 py-1 text-xs disabled:opacity-60">
+          {adding ? "Adding…" : "+ Add User"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Admin Users Tab ──────────────────────────────────────────────────────────
+function AdminUsersTab() {
+  const [users, setUsers] = useState([]);
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newResult, setNewResult] = useState(null);
+
+  useEffect(() => { api.listAdminUsers().then(setUsers).catch(() => {}); }, []);
+
+  async function addUser(e) {
+    e.preventDefault();
+    setAdding(true);
+    setNewResult(null);
+    try {
+      const u = await api.createAdminUser({ login_username: username, display_name: displayName || null });
+      setNewResult(u);
+      setUsers((prev) => [...prev, u]);
+      setUsername("");
+      setDisplayName("");
+    } catch (err) { alert(err.message); }
+    finally { setAdding(false); }
+  }
+
+  async function resetPw(userId) {
+    try {
+      const r = await api.resetAdminPassword(userId);
+      alert(`New password for ${r.login_username}:\n${r.temp_password}`);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function deactivate(userId) {
+    if (!confirm("Deactivate this admin user?")) return;
+    try {
+      await api.deactivateAdminUser(userId);
+      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_active: false } : u));
+    } catch (err) { alert(err.message); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-700 mb-4">Add Admin User</h2>
+        <form onSubmit={addUser} className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+            <input required value={username} onChange={(e) => setUsername(e.target.value)}
+              className="border rounded px-3 py-2 text-sm w-44" placeholder="e.g. ramesh" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Display Name (optional)</label>
+            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+              className="border rounded px-3 py-2 text-sm w-44" placeholder="e.g. Ramesh Patil" />
+          </div>
+          <button type="submit" disabled={adding}
+            className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
+            {adding ? "Creating…" : "Create Admin User"}
+          </button>
+        </form>
+        {newResult && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-sm space-y-2">
+            <p className="font-semibold text-green-800">Admin user created — share these credentials securely:</p>
+            <p>Username: <span className="font-mono font-semibold">{newResult.login_username}</span></p>
+            <p>Password: <span className="font-mono font-semibold">{newResult.temp_password}</span></p>
+            <p className="text-xs text-gray-500">User will be prompted to change password on first login.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold text-gray-700 mb-3">All Admin Users</h2>
+        {users.length === 0 ? (
+          <p className="text-sm text-gray-400">No admin users yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead><tr className="text-left text-gray-500 border-b">
+              <th className="pb-2">Username</th><th className="pb-2">Name</th>
+              <th className="pb-2">Active</th><th className="pb-2"></th>
+            </tr></thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-b last:border-0">
+                  <td className="py-2 font-mono">{u.login_username}</td>
+                  <td className="py-2 text-gray-600">{u.display_name || "—"}</td>
+                  <td className="py-2">{u.is_active ? <span className="text-green-700">✓</span> : <span className="text-red-400">off</span>}</td>
+                  <td className="py-2 flex gap-3">
+                    <button onClick={() => resetPw(u.id)} className="text-xs text-primary-600 hover:underline">Reset pw</button>
+                    {u.is_active && (
+                      <button onClick={() => deactivate(u.id)} className="text-xs text-red-500 hover:underline">Deactivate</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProposalsTab() {
-  const [proposals, setProposals] = useState([]);
-  const [villageMeta, setVillageMeta] = useState({});
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);

@@ -16,6 +16,7 @@ class Village(Base):
     population: Mapped[int] = mapped_column(Integer, nullable=True)
     login_username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     login_password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     bhau_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     internal_status: Mapped[str] = mapped_column(String, default="CREATED")

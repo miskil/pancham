@@ -8,6 +8,18 @@ export const getVillageEvidence = (id) => get(`/admin/villages/${id}/evidence`);
 export const getVillageOrg = (id) => get(`/admin/villages/${id}/org`);
 export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`, body);
 
+// Village users
+export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}/users`);
+export const addVillageUser = (villageId, body) => post(`/admin/villages/${villageId}/users`, body);
+export const deactivateVillageUser = (villageId, userId) => patch(`/admin/villages/${villageId}/users/${userId}/deactivate`);
+export const resetVillageUserPassword = (villageId, userId) => patch(`/admin/villages/${villageId}/users/${userId}/reset-password`);
+
+// Admin users
+export const listAdminUsers = () => get("/admin/users");
+export const createAdminUser = (body) => post("/admin/users", body);
+export const deactivateAdminUser = (userId) => patch(`/admin/users/${userId}/deactivate`);
+export const resetAdminPassword = (userId) => patch(`/admin/users/${userId}/reset-password`);
+
 export const listProposals = () => get("/admin/proposals");
 export const getProposal = (id) => get(`/admin/proposals/${id}`);
 export const reviewProposal = (id, notes) => patch(`/admin/proposals/${id}/review`, { notes });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUser, isLoggedIn, clearAuth } from "./auth";
+import { getUser, isLoggedIn, clearAuth, mustChangePassword } from "./auth";
 import { LoginView } from "./views/LoginView";
 import { AdminView } from "./views/AdminView";
 import { VillageView } from "./views/VillageView";
@@ -26,6 +26,7 @@ export default function App() {
   if (!ready) return null;
 
   if (!user) return <LoginView onLogin={handleLogin} />;
+  if (mustChangePassword()) return <LoginView onLogin={handleLogin} />;
 
   return (
     <div className="relative">

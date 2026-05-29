@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export
+from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users
 from .routers import village_me, village_proposal, village_plan, village_status, village_evidence
 from .routers import threads, channels, donor, org
 
@@ -39,6 +39,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 for r in [
     auth.router,
     admin_onboard.router,
+    admin_users.router,
     admin_proposals.router,
     admin_plans.router,
     admin_status.router,

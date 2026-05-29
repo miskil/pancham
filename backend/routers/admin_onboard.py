@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from ..db import get_db
 from ..models.village import Village
+from ..models.village_user import VillageUser
 from ..models.evidence import SupportEvidence
 from ..auth import hash_password, require_role
 from ..utils.stage import derive_stage_and_substatus
@@ -26,6 +27,18 @@ class OnboardRequest(BaseModel):
     bhau_enabled: bool = False
 
 
+class VillageUserOut(BaseModel):
+    id: str
+    display_name: str | None
+    login_username: str
+    is_active: bool
+    must_change_password: bool
+    temp_password: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class VillageOut(BaseModel):
     id: str
     name: str
@@ -37,19 +50,20 @@ class VillageOut(BaseModel):
     ngo_contact_phone: str | None = None
     village_lead_name: str | None = None
     village_lead_phone: str | None = None
-    login_username: str
     is_active: bool
     bhau_enabled: bool
     internal_status: str
     stage: str
     sub_status: str
+    # first user's credentials returned only on creation
+    login_username: str | None = None
     temp_password: str | None = None
 
     class Config:
         from_attributes = True
 
 
-def village_to_out(v: Village, temp_password: str | None = None) -> VillageOut:
+def village_to_out(v: Village, temp_password: str | None = None, login_username: str | None = None) -> VillageOut:
     stage, sub_status = derive_stage_and_substatus(v.internal_status)
     return VillageOut(
         id=v.id,
@@ -62,19 +76,30 @@ def village_to_out(v: Village, temp_password: str | None = None) -> VillageOut:
         ngo_contact_phone=v.ngo_contact_phone,
         village_lead_name=v.village_lead_name,
         village_lead_phone=v.village_lead_phone,
-        login_username=v.login_username,
         is_active=v.is_active,
         bhau_enabled=v.bhau_enabled,
         internal_status=v.internal_status,
         stage=stage,
         sub_status=sub_status,
+        login_username=login_username,
         temp_password=temp_password,
     )
 
 
+async def _unique_village_username(db: AsyncSession, base: str) -> str:
+    username = base
+    counter = 1
+    while True:
+        existing = await db.execute(select(VillageUser).where(VillageUser.login_username == username))
+        if not existing.scalar_one_or_none():
+            return username
+        username = f"{base}_{counter}"
+        counter += 1
+
+
 @router.post("", response_model=VillageOut)
 async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
-    username = body.name.lower().replace(" ", "_") + "_" + secrets.token_hex(3)
+    username = await _unique_village_username(db, body.name.lower().replace(" ", "_"))
     temp_password = secrets.token_urlsafe(8)
 
     village = Village(
@@ -88,13 +113,20 @@ async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_d
         village_lead_name=(body.village_lead_name or "").strip() or None,
         village_lead_phone=(body.village_lead_phone or "").strip() or None,
         bhau_enabled=body.bhau_enabled,
-        login_username=username,
-        login_password_hash=hash_password(temp_password),
     )
     db.add(village)
+    await db.flush()  # get village.id
+
+    vu = VillageUser(
+        village_id=village.id,
+        login_username=username,
+        login_password_hash=hash_password(temp_password),
+        must_change_password=True,
+    )
+    db.add(vu)
     await db.commit()
     await db.refresh(village)
-    return village_to_out(village, temp_password=temp_password)
+    return village_to_out(village, temp_password=temp_password, login_username=username)
 
 
 @router.get("", response_model=list[VillageOut])
@@ -104,15 +136,91 @@ async def list_villages(db: AsyncSession = Depends(get_db), _=Depends(admin_only
     return [village_to_out(v) for v in villages]
 
 
-@router.post("/{village_id}/preview-token")
-async def preview_token(village_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
-    from ..auth import create_token
+@router.get("/{village_id}/users", response_model=list[VillageUserOut])
+async def list_village_users(village_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    result = await db.execute(
+        select(VillageUser).where(VillageUser.village_id == village_id).order_by(VillageUser.created_at)
+    )
+    return result.scalars().all()
+
+
+class AddVillageUserRequest(BaseModel):
+    display_name: str | None = None
+    login_username: str | None = None  # auto-generated if omitted
+
+
+@router.post("/{village_id}/users", response_model=VillageUserOut)
+async def add_village_user(village_id: str, body: AddVillageUserRequest, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
     result = await db.execute(select(Village).where(Village.id == village_id))
     village = result.scalar_one_or_none()
     if not village:
         raise HTTPException(status_code=404, detail="Village not found")
-    token = create_token(subject=village.login_username, role="VILLAGE", village_id=village.id)
-    return {"access_token": token, "village_id": village.id, "village_name": village.name}
+
+    base = (body.login_username or village.name.lower().replace(" ", "_"))
+    username = await _unique_village_username(db, base)
+    temp_password = secrets.token_urlsafe(8)
+
+    vu = VillageUser(
+        village_id=village_id,
+        display_name=body.display_name,
+        login_username=username,
+        login_password_hash=hash_password(temp_password),
+        must_change_password=True,
+    )
+    db.add(vu)
+    await db.commit()
+    await db.refresh(vu)
+    return VillageUserOut(
+        id=vu.id,
+        display_name=vu.display_name,
+        login_username=vu.login_username,
+        is_active=vu.is_active,
+        must_change_password=vu.must_change_password,
+        temp_password=temp_password,
+    )
+
+
+@router.patch("/{village_id}/users/{user_id}/deactivate")
+async def deactivate_village_user(village_id: str, user_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    result = await db.execute(
+        select(VillageUser).where(VillageUser.id == user_id, VillageUser.village_id == village_id)
+    )
+    vu = result.scalar_one_or_none()
+    if not vu:
+        raise HTTPException(status_code=404, detail="User not found")
+    vu.is_active = False
+    await db.commit()
+    return {"ok": True}
+
+
+@router.patch("/{village_id}/users/{user_id}/reset-password")
+async def reset_village_user_password(village_id: str, user_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    result = await db.execute(
+        select(VillageUser).where(VillageUser.id == user_id, VillageUser.village_id == village_id)
+    )
+    vu = result.scalar_one_or_none()
+    if not vu:
+        raise HTTPException(status_code=404, detail="User not found")
+    temp_password = secrets.token_urlsafe(8)
+    vu.login_password_hash = hash_password(temp_password)
+    vu.must_change_password = True
+    vu.is_active = True
+    await db.commit()
+    return {"ok": True, "temp_password": temp_password, "login_username": vu.login_username}
+
+
+@router.post("/{village_id}/preview-token")
+async def preview_token(village_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    from ..auth import create_token
+    # Use the first active user for this village
+    result = await db.execute(
+        select(VillageUser).where(VillageUser.village_id == village_id, VillageUser.is_active == True)  # noqa: E712
+    )
+    vu = result.scalars().first()
+    if not vu:
+        raise HTTPException(status_code=404, detail="No active users for this village")
+    token = create_token(subject=vu.login_username, role="VILLAGE", village_id=village_id)
+    return {"access_token": token, "village_id": village_id}
 
 
 @router.get("/{village_id}/evidence")

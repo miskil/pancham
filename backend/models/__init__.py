@@ -1,4 +1,6 @@
 from .village import Village
+from .village_user import VillageUser
+from .admin_user import AdminUser
 from .proposal import Proposal, ProposalAmendment
 from .plan import ProjectPlan
 from .status_update import StatusUpdate, MediaFile
