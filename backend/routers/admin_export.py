@@ -1,5 +1,6 @@
 import io
 import logging
+import unicodedata
 from datetime import date
 
 from docx import Document
@@ -18,6 +19,18 @@ from ..models.village import Village
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/export", tags=["admin-export"])
+
+
+def _ascii_safe_filename(text: str) -> str:
+    """Convert text to ASCII-safe filename by removing non-ASCII characters."""
+    if not text:
+        return "export"
+    # Normalize and remove non-ASCII
+    nfkd = unicodedata.normalize('NFKD', text)
+    ascii_only = nfkd.encode('ascii', 'ignore').decode('ascii')
+    # Remove special characters, keep alphanumeric and basic punctuation
+    safe = ''.join(c if c.isalnum() or c in '-_' else '_' for c in ascii_only)
+    return safe.strip('_') or "export"
 
 
 def _docx_bytes(doc: Document) -> bytes:
@@ -113,7 +126,7 @@ async def export_proposal(
             _heading(doc, "Reviewer Notes", level=2)
             doc.add_paragraph(proposal.reviewer_notes)
 
-        filename = f"Proposal_{village.name if village else proposal.village_id}_{date.today()}.docx"
+        filename = f"Proposal_{_ascii_safe_filename(village.name if village else proposal.village_id)}_{date.today()}.docx"
         content = _docx_bytes(doc)
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(
@@ -194,7 +207,7 @@ async def export_plan(
                     cells[3].text = str(amount) if amount is not None else "—"
                 doc.add_paragraph()
 
-        filename = f"Plan_{plan.version_type}_{village.name if village else plan.village_id}_{date.today()}.docx"
+        filename = f"Plan_{plan.version_type}_{_ascii_safe_filename(village.name if village else plan.village_id)}_{date.today()}.docx"
         content = _docx_bytes(doc)
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return StreamingResponse(
