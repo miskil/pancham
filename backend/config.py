@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     storage_url: str = ""
     bhau_api_url: str = "https://bhau.railway.app"
     bhau_enabled: bool = False
+    enable_reset_tables_endpoint: bool = False
 
     @field_validator("database_url", mode="before")
     @classmethod

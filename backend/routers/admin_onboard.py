@@ -90,8 +90,9 @@ async def _unique_village_username(db: AsyncSession, base: str) -> str:
     username = base
     counter = 1
     while True:
-        existing = await db.execute(select(VillageUser).where(VillageUser.login_username == username))
-        if not existing.scalar_one_or_none():
+        existing_user = await db.execute(select(VillageUser).where(VillageUser.login_username == username))
+        existing_village = await db.execute(select(Village).where(Village.login_username == username))
+        if not existing_user.scalar_one_or_none() and not existing_village.scalar_one_or_none():
             return username
         username = f"{base}_{counter}"
         counter += 1
@@ -113,6 +114,10 @@ async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_d
         village_lead_name=(body.village_lead_name or "").strip() or None,
         village_lead_phone=(body.village_lead_phone or "").strip() or None,
         bhau_enabled=body.bhau_enabled,
+        # Keep legacy credential columns populated until a migration removes them.
+        login_username=username,
+        login_password_hash=hash_password(temp_password),
+        must_change_password=True,
     )
     db.add(village)
     await db.flush()  # get village.id
