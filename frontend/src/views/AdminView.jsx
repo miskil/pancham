@@ -1255,16 +1255,17 @@ function FundingTab() {
   function formatAmountForDisplay(amount) {
     if (amount === "" || amount == null) return "";
     const value = Number(amount);
-    if (!Number.isFinite(value)) return "";
-    if (currency === "USD") return (value / rate).toFixed(2);
-    return value.toFixed(2);
+    if (!Number.isFinite(value)) return amount; // pass through mid-entry strings as-is
+    const display = currency === "USD" ? value / rate : value;
+    // Show up to 2 decimal places but strip trailing zeros so 84000 shows as "84000" not "84000.00"
+    return parseFloat(display.toFixed(2)).toString();
   }
 
   function parseDisplayAmount(inputValue) {
-    if (inputValue === "") return "";
+    if (inputValue === "" || inputValue == null) return "";
     const value = Number(inputValue);
     if (!Number.isFinite(value)) return "";
-    if (currency === "USD") return String(value * rate);
+    if (currency === "USD") return String(Math.round(value * rate * 100) / 100);
     return String(value);
   }
 
@@ -1384,9 +1385,8 @@ function FundingTab() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     className="w-full border rounded px-3 py-2 text-sm"
                     value={formatAmountForDisplay(round.funding_amount)}
                     onChange={(e) => updateRound(round.id, "funding_amount", parseDisplayAmount(e.target.value))}
