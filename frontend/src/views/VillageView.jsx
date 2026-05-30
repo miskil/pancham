@@ -675,7 +675,8 @@ function FundingTab({ api }) {
         funding_sent_date: item.funding_sent_date || "",
         funding_received_date: item.funding_received_date || "",
         funding_amount: item.funding_amount != null ? String(item.funding_amount) : "",
-        funding_status_note: item.funding_status_note || "",
+        admin_funding_note: item.admin_funding_note || item.funding_status_note || "",
+        village_funding_note: item.village_funding_note || item.funding_status_note || "",
         funding_received_message: item.funding_received_message || "",
       })));
     }).catch(() => {}).finally(() => setLoading(false));
@@ -692,7 +693,8 @@ function FundingTab({ api }) {
     try {
       const updated = await api.updateFundingRound(roundId, {
         funding_received_date: current.funding_received_date || null,
-        funding_status_note: current.funding_status_note,
+        admin_funding_note: current.admin_funding_note,
+        village_funding_note: current.village_funding_note,
         funding_received_message: current.funding_received_message || null,
       });
       setRounds((prev) => prev.map((item) => item.id === roundId ? {
@@ -700,7 +702,8 @@ function FundingTab({ api }) {
         funding_sent_date: updated.funding_sent_date || "",
         funding_received_date: updated.funding_received_date || "",
         funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
-        funding_status_note: updated.funding_status_note || "",
+        admin_funding_note: updated.admin_funding_note || updated.funding_status_note || "",
+        village_funding_note: updated.village_funding_note || updated.funding_status_note || "",
         funding_received_message: updated.funding_received_message || "",
       } : item));
     } catch (err) {
@@ -761,8 +764,10 @@ function FundingTab({ api }) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Funding Status Note (Shared)</label>
-            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.funding_status_note} onChange={(e) => updateRound(round.id, "funding_status_note", e.target.value)} placeholder="Shared note visible to admin and village" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Admin Funding Note</label>
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-gray-50" value={round.admin_funding_note} readOnly placeholder="Admin note will appear here" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Funding Note</label>
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.village_funding_note} onChange={(e) => updateRound(round.id, "village_funding_note", e.target.value)} placeholder="Village-only note" />
           </div>
         </div>
       ))}

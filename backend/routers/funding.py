@@ -18,14 +18,16 @@ village_only = require_role("VILLAGE")
 class FundingRoundCreateIn(BaseModel):
     funding_amount: float | None = None
     funding_sent_date: date | None = None
-    funding_status_note: str | None = None
+    admin_funding_note: str | None = None
+    village_funding_note: str | None = None
 
 
 class FundingRoundUpdateIn(BaseModel):
     funding_amount: float | None = None
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
-    funding_status_note: str | None = None
+    admin_funding_note: str | None = None
+    village_funding_note: str | None = None
     funding_received_message: str | None = None
 
 
@@ -37,6 +39,8 @@ class FundingRoundOut(BaseModel):
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
     funding_status_note: str | None = None
+    admin_funding_note: str | None = None
+    village_funding_note: str | None = None
     funding_received_message: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
@@ -70,6 +74,8 @@ def _serialize_round(funding_round: FundingRound) -> FundingRoundOut:
         funding_sent_date=funding_round.funding_sent_date,
         funding_received_date=funding_round.funding_received_date,
         funding_status_note=funding_round.funding_status_note,
+        admin_funding_note=funding_round.admin_funding_note,
+        village_funding_note=funding_round.village_funding_note,
         funding_received_message=funding_round.funding_received_message,
         created_at=funding_round.created_at.isoformat() if funding_round.created_at else None,
         updated_at=funding_round.updated_at.isoformat() if funding_round.updated_at else None,
@@ -114,7 +120,8 @@ async def create_admin_funding_round(
         round_number=next_round_number,
         funding_amount=body.funding_amount,
         funding_sent_date=body.funding_sent_date,
-        funding_status_note=(body.funding_status_note or "").strip() or None,
+        admin_funding_note=(body.admin_funding_note or "").strip() or None,
+        village_funding_note=(body.village_funding_note or "").strip() or None,
     )
     db.add(funding_round)
     await db.commit()
@@ -136,9 +143,12 @@ async def update_admin_funding_round(
         funding_round.funding_amount = payload["funding_amount"]
     if "funding_sent_date" in payload:
         funding_round.funding_sent_date = payload["funding_sent_date"]
-    if "funding_status_note" in payload:
-        note = payload["funding_status_note"]
-        funding_round.funding_status_note = note.strip() if isinstance(note, str) and note.strip() else None
+    if "admin_funding_note" in payload:
+        note = payload["admin_funding_note"]
+        funding_round.admin_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
+    if "village_funding_note" in payload:
+        note = payload["village_funding_note"]
+        funding_round.village_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
     await db.commit()
     await db.refresh(funding_round)
     return _serialize_round(funding_round)
@@ -180,9 +190,12 @@ async def update_village_funding_round(
     payload = body.model_dump(exclude_unset=True)
     if "funding_received_date" in payload:
         funding_round.funding_received_date = payload["funding_received_date"]
-    if "funding_status_note" in payload:
-        note = payload["funding_status_note"]
-        funding_round.funding_status_note = note.strip() if isinstance(note, str) and note.strip() else None
+    if "admin_funding_note" in payload:
+        note = payload["admin_funding_note"]
+        funding_round.admin_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
+    if "village_funding_note" in payload:
+        note = payload["village_funding_note"]
+        funding_round.village_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
     if "funding_received_message" in payload:
         message = payload["funding_received_message"]
         funding_round.funding_received_message = message.strip() if isinstance(message, str) and message.strip() else None
