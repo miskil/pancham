@@ -1185,12 +1185,35 @@ function FundingTab() {
   const [rounds, setRounds] = useState([]);
   const [currency, setCurrency] = useState("USD");
   const [rate, setRate] = useState(84);
+  const [liveRateLoading, setLiveRateLoading] = useState(false);
+  const [liveRateUpdatedAt, setLiveRateUpdatedAt] = useState("");
 
   useEffect(() => {
     api.listVillages().then((data) => {
       setVillages(data);
       if (data.length) setVillageId(data[0].id);
     }).catch(() => {});
+  }, []);
+
+  async function refreshLiveRate() {
+    setLiveRateLoading(true);
+    try {
+      const res = await fetch("https://open.er-api.com/v6/latest/USD");
+      if (!res.ok) throw new Error("Failed to fetch live exchange rate");
+      const data = await res.json();
+      const inr = Number(data?.rates?.INR);
+      if (!Number.isFinite(inr) || inr <= 0) throw new Error("Invalid live exchange rate");
+      setRate(inr);
+      setLiveRateUpdatedAt(data?.time_last_update_utc || new Date().toUTCString());
+    } catch {
+      // Keep current manual rate when live fetch fails.
+    } finally {
+      setLiveRateLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshLiveRate();
   }, []);
 
   useEffect(() => {
@@ -1350,7 +1373,18 @@ function FundingTab() {
                   onChange={(e) => setRate(parseFloat(e.target.value) || 1)}
                   className="w-24 border rounded px-2 py-1 text-right"
                 />
+                <button
+                  type="button"
+                  onClick={refreshLiveRate}
+                  disabled={liveRateLoading}
+                  className="px-2 py-1 rounded border text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  {liveRateLoading ? "Loading..." : "Use Live"}
+                </button>
               </span>
+              {liveRateUpdatedAt && (
+                <span className="text-xs text-gray-500">Live rate updated: {liveRateUpdatedAt}</span>
+              )}
             </div>
           </div>
           <button onClick={addRound} disabled={creating || !villageId} className="btn-sm bg-primary-700 disabled:opacity-60">

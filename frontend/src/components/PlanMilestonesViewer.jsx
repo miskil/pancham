@@ -319,6 +319,8 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
   const initialMeta = getPlanMeta(plan?.plan_data);
   const [currency, setCurrency] = useState(initialMeta.currency || DEFAULT_PLAN_META.currency);
   const [rate, setRate] = useState(initialMeta.rate || DEFAULT_PLAN_META.rate);
+  const [liveRateLoading, setLiveRateLoading] = useState(false);
+  const [liveRateUpdatedAt, setLiveRateUpdatedAt] = useState("");
 
   if (!plan) return <p className="text-sm text-gray-400">Not available yet.</p>;
 
@@ -344,6 +346,28 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
     setRate(safeRate);
     emitPlanWithMeta(normalizedPlan, { currency, rate: safeRate });
   }
+
+  async function refreshLiveRate() {
+    setLiveRateLoading(true);
+    try {
+      const res = await fetch("https://open.er-api.com/v6/latest/USD");
+      if (!res.ok) throw new Error("Failed to fetch live exchange rate");
+      const data = await res.json();
+      const inr = Number(data?.rates?.INR);
+      if (!Number.isFinite(inr) || inr <= 0) throw new Error("Invalid live exchange rate");
+      handleRateChange(inr);
+      setLiveRateUpdatedAt(data?.time_last_update_utc || new Date().toUTCString());
+    } catch {
+      // Keep the current manually entered rate when live fetch fails.
+    } finally {
+      setLiveRateLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (currency === "USD") refreshLiveRate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency]);
 
   const grandTotalINR = sumPlanAmount(normalizedPlan);
   const symbol = currency === "INR" ? "₹" : "$";
@@ -388,6 +412,17 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
                 onChange={(e) => handleRateChange(parseFloat(e.target.value) || 1)}
                 className="w-20 border border-primary-100 rounded-xl px-2 py-1 text-right text-ink-700 bg-white"
               />
+              <button
+                type="button"
+                onClick={refreshLiveRate}
+                disabled={liveRateLoading}
+                className="px-2 py-1 rounded border border-primary-100 text-xs text-ink-600 hover:bg-ink-50 disabled:opacity-60"
+              >
+                {liveRateLoading ? "Loading..." : "Use Live"}
+              </button>
+              {liveRateUpdatedAt && (
+                <span className="text-xs text-ink-400">Updated: {liveRateUpdatedAt}</span>
+              )}
             </span>
           )}
         </div>
