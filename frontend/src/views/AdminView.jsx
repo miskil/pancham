@@ -1228,6 +1228,24 @@ function FundingTab() {
     }
   }
 
+  async function deleteRound(roundId) {
+    if (!villageId) return;
+    const current = rounds.find((item) => item.id === roundId);
+    if (!current) return;
+    const hasReceivedInformation = Boolean(current.funding_received_date) || Boolean((current.funding_received_message || "").trim());
+    if (hasReceivedInformation) {
+      alert("This funding round already has received information and cannot be deleted.");
+      return;
+    }
+    if (!window.confirm(`Delete Round ${current.round_number}? This cannot be undone.`)) return;
+    try {
+      await api.deleteVillageFundingRound(villageId, roundId);
+      setRounds((prev) => prev.filter((item) => item.id !== roundId));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   function updateRound(roundId, key, value) {
     setRounds((prev) => prev.map((item) => item.id === roundId ? { ...item, [key]: value } : item));
   }
@@ -1340,9 +1358,16 @@ function FundingTab() {
           <div key={round.id} className="rounded-xl border p-4 space-y-4 bg-gray-50">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold text-gray-700">Round {round.round_number}</h3>
-              <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id} className="btn-sm bg-primary-700 disabled:opacity-60">
-                {savingRoundId === round.id ? "Saving..." : "Save Round"}
-              </button>
+              <div className="flex items-center gap-2">
+                {!round.funding_received_date && !(round.funding_received_message || "").trim() && (
+                  <button onClick={() => deleteRound(round.id)} className="btn-sm bg-red-600 hover:bg-red-700 text-white">
+                    Delete
+                  </button>
+                )}
+                <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id} className="btn-sm bg-primary-700 disabled:opacity-60">
+                  {savingRoundId === round.id ? "Saving..." : "Save Round"}
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

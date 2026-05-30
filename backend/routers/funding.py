@@ -76,6 +76,14 @@ def _serialize_round(funding_round: FundingRound) -> FundingRoundOut:
     )
 
 
+def _has_received_information(funding_round: FundingRound) -> bool:
+    if funding_round.funding_received_date is not None:
+        return True
+    if isinstance(funding_round.funding_received_message, str) and funding_round.funding_received_message.strip():
+        return True
+    return False
+
+
 @router.get("/admin/villages/{village_id}/funding-rounds", response_model=list[FundingRoundOut])
 async def list_admin_funding_rounds(village_id: str, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
     result = await db.execute(
@@ -134,6 +142,21 @@ async def update_admin_funding_round(
     await db.commit()
     await db.refresh(funding_round)
     return _serialize_round(funding_round)
+
+
+@router.delete("/admin/villages/{village_id}/funding-rounds/{round_id}")
+async def delete_admin_funding_round(
+    village_id: str,
+    round_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(admin_only),
+):
+    funding_round = await _load_round_for_admin(db, village_id, round_id)
+    if _has_received_information(funding_round):
+        raise HTTPException(status_code=409, detail="Funding round has received information and cannot be deleted")
+    await db.delete(funding_round)
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/village/funding-rounds", response_model=list[FundingRoundOut])

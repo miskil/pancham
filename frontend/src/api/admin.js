@@ -1,4 +1,4 @@
-import { get, post, patch, download } from "./client";
+import { get, post, patch, del, download } from "./client";
 
 export const listVillages = () => get("/admin/villages");
 export const getPreviewToken = (id) => post(`/admin/villages/${id}/preview-token`);
@@ -10,6 +10,7 @@ export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`,
 export const listVillageFundingRounds = (id) => get(`/admin/villages/${id}/funding-rounds`);
 export const createVillageFundingRound = (id, body) => post(`/admin/villages/${id}/funding-rounds`, body);
 export const updateVillageFundingRound = (villageId, roundId, body) => patch(`/admin/villages/${villageId}/funding-rounds/${roundId}`, body);
+export const deleteVillageFundingRound = (villageId, roundId) => del(`/admin/villages/${villageId}/funding-rounds/${roundId}`);
 
 // Village users
 export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}/users`);
