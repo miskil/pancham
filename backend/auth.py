@@ -17,12 +17,19 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_token(subject: str, role: Literal["ADMIN", "VILLAGE", "DONOR"], village_id: str | None = None, admin_id: str | None = None) -> str:
+def create_token(
+    subject: str,
+    role: Literal["ADMIN", "VILLAGE", "DONOR"],
+    village_id: str | None = None,
+    admin_id: str | None = None,
+    village_user_type: str | None = None,
+) -> str:
     payload = {
         "sub": subject,
         "role": role,
         "village_id": village_id,
         "admin_id": admin_id,
+        "village_user_type": village_user_type,
         "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

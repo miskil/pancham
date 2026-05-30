@@ -21,6 +21,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: str
     village_id: str | None = None
+    village_user_type: str | None = None
     must_change_password: bool = False
 
 
@@ -58,8 +59,19 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not vu or not verify_password(body.password, vu.login_password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    token = create_token(subject=vu.login_username, role="VILLAGE", village_id=vu.village_id)
-    return TokenResponse(access_token=token, role="VILLAGE", village_id=vu.village_id, must_change_password=vu.must_change_password)
+    token = create_token(
+        subject=vu.login_username,
+        role="VILLAGE",
+        village_id=vu.village_id,
+        village_user_type=vu.user_type,
+    )
+    return TokenResponse(
+        access_token=token,
+        role="VILLAGE",
+        village_id=vu.village_id,
+        village_user_type=vu.user_type,
+        must_change_password=vu.must_change_password,
+    )
 
 
 @router.post("/village/change-password")

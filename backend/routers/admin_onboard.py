@@ -30,6 +30,7 @@ class OnboardRequest(BaseModel):
 class VillageUserOut(BaseModel):
     id: str
     display_name: str | None
+    user_type: str
     login_username: str
     is_active: bool
     must_change_password: bool
@@ -124,6 +125,7 @@ async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_d
 
     vu = VillageUser(
         village_id=village.id,
+        user_type="NGO",
         login_username=username,
         login_password_hash=hash_password(temp_password),
         must_change_password=True,
@@ -152,6 +154,7 @@ async def list_village_users(village_id: str, db: AsyncSession = Depends(get_db)
 class AddVillageUserRequest(BaseModel):
     display_name: str | None = None
     login_username: str | None = None  # auto-generated if omitted
+    user_type: str = "VILLAGE"  # NGO | VDC | VILLAGE
 
 
 @router.post("/{village_id}/users", response_model=VillageUserOut)
@@ -168,6 +171,7 @@ async def add_village_user(village_id: str, body: AddVillageUserRequest, db: Asy
     vu = VillageUser(
         village_id=village_id,
         display_name=body.display_name,
+        user_type=(body.user_type or "VILLAGE").upper(),
         login_username=username,
         login_password_hash=hash_password(temp_password),
         must_change_password=True,
@@ -178,6 +182,7 @@ async def add_village_user(village_id: str, body: AddVillageUserRequest, db: Asy
     return VillageUserOut(
         id=vu.id,
         display_name=vu.display_name,
+        user_type=vu.user_type,
         login_username=vu.login_username,
         is_active=vu.is_active,
         must_change_password=vu.must_change_password,
@@ -224,7 +229,7 @@ async def preview_token(village_id: str, db: AsyncSession = Depends(get_db), _=D
     vu = result.scalars().first()
     if not vu:
         raise HTTPException(status_code=404, detail="No active users for this village")
-    token = create_token(subject=vu.login_username, role="VILLAGE", village_id=village_id)
+    token = create_token(subject=vu.login_username, role="VILLAGE", village_id=village_id, village_user_type=vu.user_type)
     return {"access_token": token, "village_id": village_id}
 
 

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth import require_role
 from ..db import get_db
 from ..models.village import Village
+from ..models.village_user import VillageUser
 
 router = APIRouter(tags=["org"])
 admin_only = require_role("ADMIN")
@@ -72,6 +73,33 @@ def _serialize_org(village: Village) -> OrgProfileOut:
 def _validate_members_limit(members: list[VdcMember] | None) -> None:
     if members is not None and len(members) > 5:
         raise HTTPException(status_code=400, detail="Maximum 5 VDC members are allowed")
+
+
+def _norm_name(value: str | None) -> str:
+    if not value:
+        return ""
+    return " ".join(value.strip().lower().split())
+
+
+async def _ensure_ngo_lead_user(db: AsyncSession, village_id: str, username: str | None) -> None:
+    if not username:
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
+    village_result = await db.execute(select(Village).where(Village.id == village_id))
+    village = village_result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+    user_result = await db.execute(
+        select(VillageUser).where(
+            VillageUser.village_id == village_id,
+            VillageUser.login_username == username,
+            VillageUser.is_active == True,  # noqa: E712
+        )
+    )
+    village_user = user_result.scalar_one_or_none()
+    if not village_user:
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
+    if (village_user.user_type or "").upper() != "NGO":
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
 
 
 def _serialize_funding(village: Village) -> FundingProfileOut:
@@ -210,6 +238,7 @@ async def update_village_funding(
     db: AsyncSession = Depends(get_db),
     user=Depends(village_only),
 ):
+    await _ensure_ngo_lead_user(db, user["village_id"], user.get("sub"))
     result = await db.execute(select(Village).where(Village.id == user["village_id"]))
     village = result.scalar_one_or_none()
     if not village:

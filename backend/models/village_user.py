@@ -11,6 +11,7 @@ class VillageUser(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     village_id: Mapped[str] = mapped_column(String, ForeignKey("villages.id"), nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=True)
+    user_type: Mapped[str] = mapped_column(String, nullable=False, default="VILLAGE")
     login_username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     login_password_hash: Mapped[str] = mapped_column(String, nullable=False)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)

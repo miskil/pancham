@@ -9,6 +9,7 @@ from ..auth import require_role
 from ..db import get_db
 from ..models.funding import FundingRound
 from ..models.village import Village
+from ..models.village_user import VillageUser
 
 router = APIRouter(tags=["funding"])
 admin_only = require_role("ADMIN")
@@ -42,6 +43,8 @@ class FundingRoundOut(BaseModel):
     admin_funding_note: str | None = None
     village_funding_note: str | None = None
     funding_received_message: str | None = None
+    funding_received_by_username: str | None = None
+    funding_received_by_ngo_lead_name: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -77,6 +80,8 @@ def _serialize_round(funding_round: FundingRound) -> FundingRoundOut:
         admin_funding_note=funding_round.admin_funding_note,
         village_funding_note=funding_round.village_funding_note,
         funding_received_message=funding_round.funding_received_message,
+        funding_received_by_username=funding_round.funding_received_by_username,
+        funding_received_by_ngo_lead_name=funding_round.funding_received_by_ngo_lead_name,
         created_at=funding_round.created_at.isoformat() if funding_round.created_at else None,
         updated_at=funding_round.updated_at.isoformat() if funding_round.updated_at else None,
     )
@@ -88,6 +93,33 @@ def _has_received_information(funding_round: FundingRound) -> bool:
     if isinstance(funding_round.funding_received_message, str) and funding_round.funding_received_message.strip():
         return True
     return False
+
+
+def _norm_name(value: str | None) -> str:
+    if not value:
+        return ""
+    return " ".join(value.strip().lower().split())
+
+
+async def _ensure_ngo_lead_user(db: AsyncSession, village_id: str, username: str | None) -> None:
+    if not username:
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
+    village_result = await db.execute(select(Village).where(Village.id == village_id))
+    village = village_result.scalar_one_or_none()
+    if not village:
+        raise HTTPException(status_code=404, detail="Village not found")
+    village_user_result = await db.execute(
+        select(VillageUser).where(
+            VillageUser.village_id == village_id,
+            VillageUser.login_username == username,
+            VillageUser.is_active == True,  # noqa: E712
+        )
+    )
+    village_user = village_user_result.scalar_one_or_none()
+    if not village_user:
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
+    if (village_user.user_type or "").upper() != "NGO":
+        raise HTTPException(status_code=403, detail="Only NGO lead can update funding")
 
 
 @router.get("/admin/villages/{village_id}/funding-rounds", response_model=list[FundingRoundOut])
@@ -186,16 +218,29 @@ async def update_village_funding_round(
     db: AsyncSession = Depends(get_db),
     user=Depends(village_only),
 ):
+    await _ensure_ngo_lead_user(db, user["village_id"], user.get("sub"))
     funding_round = await _load_round_for_village(db, user["village_id"], round_id)
     payload = body.model_dump(exclude_unset=True)
+    received_info_changed = False
     if "funding_received_date" in payload:
         funding_round.funding_received_date = payload["funding_received_date"]
+        received_info_changed = True
     if "village_funding_note" in payload:
         note = payload["village_funding_note"]
         funding_round.village_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
     if "funding_received_message" in payload:
         message = payload["funding_received_message"]
         funding_round.funding_received_message = message.strip() if isinstance(message, str) and message.strip() else None
+        received_info_changed = True
+    if received_info_changed:
+        funding_round.funding_received_by_username = user.get("sub")
+        village_result = await db.execute(select(Village).where(Village.id == user["village_id"]))
+        village = village_result.scalar_one_or_none()
+        if village is not None:
+            ngo_lead = (village.ngo_contact_name or "").strip()
+            funding_round.funding_received_by_ngo_lead_name = ngo_lead or None
+        else:
+            funding_round.funding_received_by_ngo_lead_name = None
     await db.commit()
     await db.refresh(funding_round)
     return _serialize_round(funding_round)

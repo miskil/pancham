@@ -479,6 +479,7 @@ function VillageUsersPanel({ villageId, villageName }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUsername, setNewUsername] = useState("");
+  const [newUserType, setNewUserType] = useState("VILLAGE");
   const [newResult, setNewResult] = useState(null);
 
   useEffect(() => {
@@ -493,11 +494,13 @@ function VillageUsersPanel({ villageId, villageName }) {
       const u = await api.addVillageUser(villageId, {
         display_name: newName || null,
         login_username: newUsername || null,
+        user_type: newUserType,
       });
       setNewResult(u);
       setUsers((prev) => [...(prev || []), u]);
       setNewName("");
       setNewUsername("");
+      setNewUserType("VILLAGE");
     } catch (err) { alert(err.message); }
     finally { setAdding(false); }
   }
@@ -526,6 +529,7 @@ function VillageUsersPanel({ villageId, villageName }) {
         <table className="w-full text-xs">
           <thead><tr className="text-left text-gray-500 border-b">
             <th className="pb-1">Username</th><th className="pb-1">Name</th>
+            <th className="pb-1">Type</th>
             <th className="pb-1">Active</th><th className="pb-1"></th>
           </tr></thead>
           <tbody>
@@ -533,6 +537,7 @@ function VillageUsersPanel({ villageId, villageName }) {
               <tr key={u.id} className="border-b last:border-0">
                 <td className="py-1 font-mono">{u.login_username}</td>
                 <td className="py-1 text-gray-600">{u.display_name || "—"}</td>
+                <td className="py-1 text-gray-600">{u.user_type || "VILLAGE"}</td>
                 <td className="py-1">{u.is_active ? "✓" : <span className="text-red-500">off</span>}</td>
                 <td className="py-1 flex gap-2">
                   <button onClick={() => resetPw(u.id)} className="text-primary-600 hover:underline">Reset pw</button>
@@ -570,6 +575,14 @@ function VillageUsersPanel({ villageId, villageName }) {
           <label className="block text-xs text-gray-500 mb-0.5">Username (optional)</label>
           <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
             className="border rounded px-2 py-1 text-xs w-36" placeholder="auto-generated" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">User Type</label>
+          <select value={newUserType} onChange={(e) => setNewUserType(e.target.value)} className="border rounded px-2 py-1 text-xs w-28">
+            <option value="VILLAGE">VILLAGE</option>
+            <option value="VDC">VDC</option>
+            <option value="NGO">NGO</option>
+          </select>
         </div>
         <button onClick={addUser} disabled={adding}
           className="bg-primary-700 text-white rounded px-3 py-1 text-xs disabled:opacity-60">
@@ -1228,6 +1241,8 @@ function FundingTab() {
         admin_funding_note: item.admin_funding_note || item.funding_status_note || "",
         village_funding_note: item.village_funding_note || item.funding_status_note || "",
         funding_received_message: item.funding_received_message || "",
+        funding_received_by_username: item.funding_received_by_username || "",
+        funding_received_by_ngo_lead_name: item.funding_received_by_ngo_lead_name || "",
       })));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [villageId]);
@@ -1245,6 +1260,8 @@ function FundingTab() {
         admin_funding_note: created.admin_funding_note || created.funding_status_note || "",
         village_funding_note: created.village_funding_note || created.funding_status_note || "",
         funding_received_message: created.funding_received_message || "",
+        funding_received_by_username: created.funding_received_by_username || "",
+        funding_received_by_ngo_lead_name: created.funding_received_by_ngo_lead_name || "",
       }]);
     } catch (err) {
       alert(err.message);
@@ -1313,6 +1330,8 @@ function FundingTab() {
         admin_funding_note: updated.admin_funding_note || updated.funding_status_note || "",
         village_funding_note: updated.village_funding_note || updated.funding_status_note || "",
         funding_received_message: updated.funding_received_message || "",
+        funding_received_by_username: updated.funding_received_by_username || "",
+        funding_received_by_ngo_lead_name: updated.funding_received_by_ngo_lead_name || "",
       } : item));
     } catch (err) {
       alert(err.message);
@@ -1438,6 +1457,14 @@ function FundingTab() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Received Message for Audit</label>
                   <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-gray-50" value={round.funding_received_message} readOnly placeholder="Village audit message will appear here" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Received By (Village User)</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_received_by_username} readOnly placeholder="Village username will appear here" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_received_by_ngo_lead_name} readOnly placeholder="NGO lead name from village org profile" />
                 </div>
               </div>
             </div>

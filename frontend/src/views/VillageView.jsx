@@ -20,6 +20,11 @@ function stageProgress(stage) {
   return STAGE_PROGRESS[stage] ?? 0;
 }
 
+function normalizeName(value) {
+  if (!value) return "";
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function makeApi(token) {
   if (!token) return baseApi;
   const f = (path, opts = {}) => apiFetch(path, { ...opts, headers: { Authorization: `Bearer ${token}`, ...opts.headers } });
@@ -164,7 +169,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab api={api} />}
-        {tab === "Funding" && <FundingTab api={api} />}
+        {tab === "Funding" && <FundingTab api={api} me={me} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
       </div>
@@ -663,10 +668,11 @@ function OrgTab({ api }) {
   );
 }
 
-function FundingTab({ api }) {
+function FundingTab({ api, me }) {
   const [loading, setLoading] = useState(true);
   const [savingRoundId, setSavingRoundId] = useState(null);
   const [rounds, setRounds] = useState([]);
+  const canEditFunding = (me?.current_user_type || "").toUpperCase() === "NGO";
 
   useEffect(() => {
     api.listFundingRounds().then((data) => {
@@ -721,6 +727,11 @@ function FundingTab({ api }) {
 
   return (
     <div className="bg-white rounded-xl border p-5 space-y-4">
+      {!canEditFunding && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Funding is read-only. Only NGO lead can update received details.
+        </div>
+      )}
       <div>
         <p className="text-xs text-gray-500">Total Funding</p>
         <p className="text-2xl font-semibold text-gray-800">₹ {totalFunding.toLocaleString("en-IN")}</p>
@@ -732,7 +743,7 @@ function FundingTab({ api }) {
         <div key={round.id} className="rounded-xl border p-4 space-y-4 bg-gray-50">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-semibold text-gray-700">Round {round.round_number}</h3>
-            <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id} className="btn-sm bg-primary-700 disabled:opacity-60">
+            <button onClick={() => saveRound(round.id)} disabled={savingRoundId === round.id || !canEditFunding} className="btn-sm bg-primary-700 disabled:opacity-60">
               {savingRoundId === round.id ? "Saving..." : "Save Round"}
             </button>
           </div>
@@ -754,11 +765,11 @@ function FundingTab({ api }) {
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Receiver (Village)</p>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date</label>
-                <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_received_date} onChange={(e) => updateRound(round.id, "funding_received_date", e.target.value)} />
+                <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_received_date} onChange={(e) => updateRound(round.id, "funding_received_date", e.target.value)} readOnly={!canEditFunding} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Received Message for Audit</label>
-                <textarea className="w-full border rounded px-3 py-2 text-sm h-24" value={round.funding_received_message} onChange={(e) => updateRound(round.id, "funding_received_message", e.target.value)} placeholder="Village audit message" />
+                <textarea className="w-full border rounded px-3 py-2 text-sm h-24" value={round.funding_received_message} onChange={(e) => updateRound(round.id, "funding_received_message", e.target.value)} placeholder="Village audit message" readOnly={!canEditFunding} />
               </div>
             </div>
           </div>
@@ -767,7 +778,7 @@ function FundingTab({ api }) {
             <label className="block text-xs font-medium text-gray-600 mb-1">Admin Funding Note</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-gray-50" value={round.admin_funding_note} readOnly placeholder="Admin note will appear here" />
             <label className="block text-xs font-medium text-gray-600 mb-1">Village Funding Note</label>
-            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.village_funding_note} onChange={(e) => updateRound(round.id, "village_funding_note", e.target.value)} placeholder="Village-only note" />
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.village_funding_note} onChange={(e) => updateRound(round.id, "village_funding_note", e.target.value)} placeholder="Village-only note" readOnly={!canEditFunding} />
           </div>
         </div>
       ))}
