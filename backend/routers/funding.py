@@ -26,6 +26,7 @@ class FundingRoundUpdateIn(BaseModel):
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
     funding_status_note: str | None = None
+    funding_received_message: str | None = None
 
 
 class FundingRoundOut(BaseModel):
@@ -36,6 +37,7 @@ class FundingRoundOut(BaseModel):
     funding_sent_date: date | None = None
     funding_received_date: date | None = None
     funding_status_note: str | None = None
+    funding_received_message: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -68,6 +70,7 @@ def _serialize_round(funding_round: FundingRound) -> FundingRoundOut:
         funding_sent_date=funding_round.funding_sent_date,
         funding_received_date=funding_round.funding_received_date,
         funding_status_note=funding_round.funding_status_note,
+        funding_received_message=funding_round.funding_received_message,
         created_at=funding_round.created_at.isoformat() if funding_round.created_at else None,
         updated_at=funding_round.updated_at.isoformat() if funding_round.updated_at else None,
     )
@@ -157,6 +160,9 @@ async def update_village_funding_round(
     if "funding_status_note" in payload:
         note = payload["funding_status_note"]
         funding_round.funding_status_note = note.strip() if isinstance(note, str) and note.strip() else None
+    if "funding_received_message" in payload:
+        message = payload["funding_received_message"]
+        funding_round.funding_received_message = message.strip() if isinstance(message, str) and message.strip() else None
     await db.commit()
     await db.refresh(funding_round)
     return _serialize_round(funding_round)

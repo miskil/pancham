@@ -1183,6 +1183,8 @@ function FundingTab() {
   const [creating, setCreating] = useState(false);
   const [savingRoundId, setSavingRoundId] = useState(null);
   const [rounds, setRounds] = useState([]);
+  const [currency, setCurrency] = useState("USD");
+  const [rate, setRate] = useState(84);
 
   useEffect(() => {
     api.listVillages().then((data) => {
@@ -1201,6 +1203,7 @@ function FundingTab() {
         funding_received_date: item.funding_received_date || "",
         funding_amount: item.funding_amount != null ? String(item.funding_amount) : "",
         funding_status_note: item.funding_status_note || "",
+        funding_received_message: item.funding_received_message || "",
       })));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [villageId]);
@@ -1216,6 +1219,7 @@ function FundingTab() {
         funding_received_date: created.funding_received_date || "",
         funding_amount: created.funding_amount != null ? String(created.funding_amount) : "",
         funding_status_note: created.funding_status_note || "",
+        funding_received_message: created.funding_received_message || "",
       }]);
     } catch (err) {
       alert(err.message);
@@ -1228,6 +1232,22 @@ function FundingTab() {
     setRounds((prev) => prev.map((item) => item.id === roundId ? { ...item, [key]: value } : item));
   }
 
+  function formatAmountForDisplay(amount) {
+    if (amount === "" || amount == null) return "";
+    const value = Number(amount);
+    if (!Number.isFinite(value)) return "";
+    if (currency === "USD") return (value / rate).toFixed(2);
+    return value.toFixed(2);
+  }
+
+  function parseDisplayAmount(inputValue) {
+    if (inputValue === "") return "";
+    const value = Number(inputValue);
+    if (!Number.isFinite(value)) return "";
+    if (currency === "USD") return String(value * rate);
+    return String(value);
+  }
+
   async function saveRound(roundId) {
     if (!villageId) return;
     const current = rounds.find((item) => item.id === roundId);
@@ -1238,6 +1258,7 @@ function FundingTab() {
         funding_sent_date: current.funding_sent_date || null,
         funding_amount: current.funding_amount === "" ? null : Number(current.funding_amount),
         funding_status_note: current.funding_status_note,
+        funding_received_message: current.funding_received_message,
       });
       setRounds((prev) => prev.map((item) => item.id === roundId ? {
         ...updated,
@@ -1245,6 +1266,7 @@ function FundingTab() {
         funding_received_date: updated.funding_received_date || "",
         funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
+        funding_received_message: updated.funding_received_message || "",
       } : item));
     } catch (err) {
       alert(err.message);
@@ -1254,6 +1276,9 @@ function FundingTab() {
   }
 
   const totalFunding = rounds.reduce((sum, item) => sum + (Number(item.funding_amount) || 0), 0);
+  const totalFundingDisplay = currency === "USD"
+    ? (totalFunding / rate).toFixed(2)
+    : totalFunding.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
   return (
     <div className="space-y-4">
@@ -1272,9 +1297,38 @@ function FundingTab() {
 
       <div className="bg-white rounded-xl border p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="space-y-2">
             <p className="text-xs text-gray-500">Total Funding</p>
-            <p className="text-2xl font-semibold text-gray-800">₹ {totalFunding.toLocaleString("en-IN")}</p>
+            <p className="text-2xl font-semibold text-gray-800">{currency === "USD" ? "$" : "₹"} {totalFundingDisplay}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex rounded-xl border border-primary-100 overflow-hidden text-sm bg-white">
+                <button
+                  type="button"
+                  onClick={() => setCurrency("USD")}
+                  className={`px-3 py-1.5 ${currency === "USD" ? "bg-primary-700 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  USD
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency("INR")}
+                  className={`px-3 py-1.5 ${currency === "INR" ? "bg-primary-700 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  INR
+                </button>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                $1 = ₹
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={rate}
+                  onChange={(e) => setRate(parseFloat(e.target.value) || 1)}
+                  className="w-24 border rounded px-2 py-1 text-right"
+                />
+              </span>
+            </div>
           </div>
           <button onClick={addRound} disabled={creating || !villageId} className="btn-sm bg-primary-700 disabled:opacity-60">
             {creating ? "Adding..." : "Add Funding Round"}
@@ -1300,7 +1354,15 @@ function FundingTab() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Funding Amount</label>
-                  <input type="number" step="0.01" min="0" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_amount} onChange={(e) => updateRound(round.id, "funding_amount", e.target.value)} placeholder="Enter amount" />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    value={formatAmountForDisplay(round.funding_amount)}
+                    onChange={(e) => updateRound(round.id, "funding_amount", parseDisplayAmount(e.target.value))}
+                    placeholder={currency === "USD" ? "Enter amount in USD" : "Enter amount in INR"}
+                  />
                 </div>
               </div>
 
@@ -1309,6 +1371,10 @@ function FundingTab() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date</label>
                   <input type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_received_date} readOnly />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Received Message for Audit</label>
+                  <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-gray-50" value={round.funding_received_message} readOnly placeholder="Village audit message will appear here" />
                 </div>
               </div>
             </div>

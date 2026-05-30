@@ -676,6 +676,7 @@ function FundingTab({ api }) {
         funding_received_date: item.funding_received_date || "",
         funding_amount: item.funding_amount != null ? String(item.funding_amount) : "",
         funding_status_note: item.funding_status_note || "",
+        funding_received_message: item.funding_received_message || "",
       })));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [api]);
@@ -692,6 +693,7 @@ function FundingTab({ api }) {
       const updated = await api.updateFundingRound(roundId, {
         funding_received_date: current.funding_received_date || null,
         funding_status_note: current.funding_status_note,
+        funding_received_message: current.funding_received_message || null,
       });
       setRounds((prev) => prev.map((item) => item.id === roundId ? {
         ...updated,
@@ -699,6 +701,7 @@ function FundingTab({ api }) {
         funding_received_date: updated.funding_received_date || "",
         funding_amount: updated.funding_amount != null ? String(updated.funding_amount) : "",
         funding_status_note: updated.funding_status_note || "",
+        funding_received_message: updated.funding_received_message || "",
       } : item));
     } catch (err) {
       alert(err.message);
@@ -749,6 +752,10 @@ function FundingTab({ api }) {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Funding Received Date</label>
                 <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={round.funding_received_date} onChange={(e) => updateRound(round.id, "funding_received_date", e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Received Message for Audit</label>
+                <textarea className="w-full border rounded px-3 py-2 text-sm h-24" value={round.funding_received_message} onChange={(e) => updateRound(round.id, "funding_received_message", e.target.value)} placeholder="Village audit message" />
               </div>
             </div>
           </div>
