@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +19,8 @@ class VillageMe(BaseModel):
     district: str
     taluka: str
     ngo_name: str | None = None
+    fcra_number: str | None = None
+    fcra_expiry_date: date | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
     village_lead_name: str | None = None
@@ -47,7 +50,11 @@ async def get_me(db: AsyncSession = Depends(get_db), user=Depends(village_only))
     stage, sub_status = derive_stage_and_substatus(village.internal_status)
     return VillageMe(
         id=village.id, name=village.name, district=village.district, taluka=village.taluka,
-        ngo_name=village.ngo_name, ngo_contact_name=village.ngo_contact_name, ngo_contact_phone=village.ngo_contact_phone,
+        ngo_name=village.ngo_name,
+        fcra_number=village.fcra_number or village.ngo_name,
+        fcra_expiry_date=village.fcra_expiry_date,
+        ngo_contact_name=village.ngo_contact_name,
+        ngo_contact_phone=village.ngo_contact_phone,
         village_lead_name=village.village_lead_name, village_lead_phone=village.village_lead_phone,
         current_user_username=user.get("sub"), current_user_display_name=village_user.display_name if village_user else None,
         current_user_type=village_user.user_type if village_user else None,

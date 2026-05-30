@@ -21,6 +21,8 @@ class Village(Base):
     bhau_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     internal_status: Mapped[str] = mapped_column(String, default="CREATED")
     ngo_name: Mapped[str] = mapped_column(String, nullable=True)
+    fcra_number: Mapped[str] = mapped_column(String, nullable=True)
+    fcra_expiry_date: Mapped[date] = mapped_column(Date, nullable=True)
     ngo_contact_name: Mapped[str] = mapped_column(String, nullable=True)
     ngo_contact_phone: Mapped[str] = mapped_column(String, nullable=True)
     village_lead_name: Mapped[str] = mapped_column(String, nullable=True)

@@ -130,10 +130,15 @@ export function VillageView({ previewToken } = {}) {
           {me && (
             <div className="flex-1">
               <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>
-              {(me.village_lead_name || me.ngo_name) && (
+              {(me.village_lead_name || me.fcra_number || me.ngo_name) && (
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-primary-50/75">
                   {me.village_lead_name && <span><span className="text-primary-50/50">Lead</span> {me.village_lead_name}{me.village_lead_phone ? ` · ${me.village_lead_phone}` : ""}</span>}
-                  {me.ngo_name && <span><span className="text-primary-50/50">NGO</span> {me.ngo_name}{me.ngo_contact_name ? ` · ${me.ngo_contact_name}` : ""}{me.ngo_contact_phone ? ` (${me.ngo_contact_phone})` : ""}</span>}
+                  {(me.fcra_number || me.ngo_name) && (
+                    <span>
+                      <span className="text-primary-50/50">FCRA</span> {me.fcra_number || me.ngo_name}
+                      {me.fcra_expiry_date ? ` · Expires ${me.fcra_expiry_date}` : ""}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -504,7 +509,8 @@ function OrgTab({ api }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    ngo_name: "",
+    fcra_number: "",
+    fcra_expiry_date: "",
     ngo_contact_name: "",
     ngo_contact_phone: "",
     village_lead_name: "",
@@ -520,7 +526,8 @@ function OrgTab({ api }) {
         .map((m) => ({ name: m.name || "", role: m.role || "", phone: m.phone || "" }));
       while (members.length < 5) members.push({ name: "", role: "", phone: "" });
       setForm({
-        ngo_name: data.ngo_name || "",
+        fcra_number: data.fcra_number || data.ngo_name || "",
+        fcra_expiry_date: data.fcra_expiry_date || "",
         ngo_contact_name: data.ngo_contact_name || "",
         ngo_contact_phone: data.ngo_contact_phone || "",
         village_lead_name: data.village_lead_name || "",
@@ -543,7 +550,8 @@ function OrgTab({ api }) {
     setSaving(true);
     try {
       await api.updateOrg({
-        ngo_name: form.ngo_name,
+        fcra_number: form.fcra_number,
+        fcra_expiry_date: form.fcra_expiry_date || null,
         ngo_contact_name: form.ngo_contact_name,
         ngo_contact_phone: form.ngo_contact_phone,
         village_lead_name: form.village_lead_name,
@@ -601,12 +609,21 @@ function OrgTab({ api }) {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">NGO</label>
-          <input
-            className="w-full border rounded px-3 py-2 text-sm"
-            value={form.ngo_name}
-            onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
-          />
+          <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Number</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              className="border rounded px-3 py-2 text-sm"
+              value={form.fcra_number}
+              onChange={(e) => setForm((p) => ({ ...p, fcra_number: e.target.value }))}
+              placeholder="FCRA number"
+            />
+            <input
+              type="date"
+              className="border rounded px-3 py-2 text-sm"
+              value={form.fcra_expiry_date}
+              onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
+            />
+          </div>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Contact</label>
@@ -930,11 +947,12 @@ function EvidenceTab({ api }) {
 
 function VillageOrgReadOnly({ village }) {
   if (!village) return null;
-  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
+  const hasOrg = village.fcra_number || village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
   if (!hasOrg) return null;
   return (
     <div className="mt-3 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
-      <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
+      <p><span className="font-medium">FCRA Number:</span> {village.fcra_number || village.ngo_name || "-"}</p>
+      <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
       <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
       <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
     </div>

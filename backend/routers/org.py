@@ -22,6 +22,8 @@ class VdcMember(BaseModel):
 
 class OrgProfileIn(BaseModel):
     ngo_name: str | None = None
+    fcra_number: str | None = None
+    fcra_expiry_date: date | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
     village_lead_name: str | None = None
@@ -33,6 +35,8 @@ class OrgProfileIn(BaseModel):
 class OrgProfileOut(BaseModel):
     village_id: str
     ngo_name: str | None = None
+    fcra_number: str | None = None
+    fcra_expiry_date: date | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
     village_lead_name: str | None = None
@@ -61,6 +65,8 @@ def _serialize_org(village: Village) -> OrgProfileOut:
     return OrgProfileOut(
         village_id=village.id,
         ngo_name=village.ngo_name,
+        fcra_number=village.fcra_number or village.ngo_name,
+        fcra_expiry_date=village.fcra_expiry_date,
         ngo_contact_name=village.ngo_contact_name,
         ngo_contact_phone=village.ngo_contact_phone,
         village_lead_name=village.village_lead_name,
@@ -139,6 +145,10 @@ async def update_village_org(
 
     if body.ngo_name is not None:
         village.ngo_name = body.ngo_name.strip() or None
+    if body.fcra_number is not None:
+        village.fcra_number = body.fcra_number.strip() or None
+    if body.fcra_expiry_date is not None:
+        village.fcra_expiry_date = body.fcra_expiry_date
     if body.ngo_contact_name is not None:
         village.ngo_contact_name = body.ngo_contact_name.strip() or None
     if body.ngo_contact_phone is not None:
@@ -194,6 +204,10 @@ async def update_admin_village_org(
 
     if body.ngo_name is not None:
         village.ngo_name = body.ngo_name.strip() or None
+    if body.fcra_number is not None:
+        village.fcra_number = body.fcra_number.strip() or None
+    if body.fcra_expiry_date is not None:
+        village.fcra_expiry_date = body.fcra_expiry_date
     if body.ngo_contact_name is not None:
         village.ngo_contact_name = body.ngo_contact_name.strip() or None
     if body.ngo_contact_phone is not None:
