@@ -154,7 +154,7 @@ async def list_village_users(village_id: str, db: AsyncSession = Depends(get_db)
 class AddVillageUserRequest(BaseModel):
     display_name: str | None = None
     login_username: str | None = None  # auto-generated if omitted
-    user_type: str = "VILLAGE"  # NGO | VDC | VILLAGE
+    user_type: str = "VDC"  # ADMIN | NGO | VDC
 
 
 @router.post("/{village_id}/users", response_model=VillageUserOut)
@@ -168,10 +168,16 @@ async def add_village_user(village_id: str, body: AddVillageUserRequest, db: Asy
     username = await _unique_village_username(db, base)
     temp_password = secrets.token_urlsafe(8)
 
+    normalized_user_type = (body.user_type or "VDC").strip().upper()
+    if normalized_user_type == "VILLAGE":
+        normalized_user_type = "VDC"
+    if normalized_user_type not in {"ADMIN", "NGO", "VDC"}:
+        raise HTTPException(status_code=400, detail="user_type must be one of: ADMIN, NGO, VDC")
+
     vu = VillageUser(
         village_id=village_id,
         display_name=body.display_name,
-        user_type=(body.user_type or "VILLAGE").upper(),
+        user_type=normalized_user_type,
         login_username=username,
         login_password_hash=hash_password(temp_password),
         must_change_password=True,

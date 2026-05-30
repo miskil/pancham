@@ -479,7 +479,7 @@ function VillageUsersPanel({ villageId, villageName }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUsername, setNewUsername] = useState("");
-  const [newUserType, setNewUserType] = useState("VILLAGE");
+  const [newUserType, setNewUserType] = useState("VDC");
   const [newResult, setNewResult] = useState(null);
 
   useEffect(() => {
@@ -500,7 +500,7 @@ function VillageUsersPanel({ villageId, villageName }) {
       setUsers((prev) => [...(prev || []), u]);
       setNewName("");
       setNewUsername("");
-      setNewUserType("VILLAGE");
+      setNewUserType("VDC");
     } catch (err) { alert(err.message); }
     finally { setAdding(false); }
   }
@@ -537,7 +537,7 @@ function VillageUsersPanel({ villageId, villageName }) {
               <tr key={u.id} className="border-b last:border-0">
                 <td className="py-1 font-mono">{u.login_username}</td>
                 <td className="py-1 text-gray-600">{u.display_name || "—"}</td>
-                <td className="py-1 text-gray-600">{u.user_type || "VILLAGE"}</td>
+                <td className="py-1 text-gray-600">{u.user_type || "VDC"}</td>
                 <td className="py-1">{u.is_active ? "✓" : <span className="text-red-500">off</span>}</td>
                 <td className="py-1 flex gap-2">
                   <button onClick={() => resetPw(u.id)} className="text-primary-600 hover:underline">Reset pw</button>
@@ -579,7 +579,7 @@ function VillageUsersPanel({ villageId, villageName }) {
         <div>
           <label className="block text-xs text-gray-500 mb-0.5">User Type</label>
           <select value={newUserType} onChange={(e) => setNewUserType(e.target.value)} className="border rounded px-2 py-1 text-xs w-28">
-            <option value="VILLAGE">VILLAGE</option>
+            <option value="ADMIN">ADMIN</option>
             <option value="VDC">VDC</option>
             <option value="NGO">NGO</option>
           </select>
