@@ -190,9 +190,6 @@ async def update_village_funding_round(
     payload = body.model_dump(exclude_unset=True)
     if "funding_received_date" in payload:
         funding_round.funding_received_date = payload["funding_received_date"]
-    if "admin_funding_note" in payload:
-        note = payload["admin_funding_note"]
-        funding_round.admin_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
     if "village_funding_note" in payload:
         note = payload["village_funding_note"]
         funding_round.village_funding_note = note.strip() if isinstance(note, str) and note.strip() else None
