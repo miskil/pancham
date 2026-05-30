@@ -579,7 +579,6 @@ function VillageUsersPanel({ villageId, villageName }) {
         <div>
           <label className="block text-xs text-gray-500 mb-0.5">User Type</label>
           <select value={newUserType} onChange={(e) => setNewUserType(e.target.value)} className="border rounded px-2 py-1 text-xs w-28">
-            <option value="ADMIN">ADMIN</option>
             <option value="VDC">VDC</option>
             <option value="NGO">NGO</option>
           </select>
