@@ -21,6 +21,8 @@ class VdcMember(BaseModel):
 
 
 class OrgProfileIn(BaseModel):
+    district: str | None = None
+    taluka: str | None = None
     ngo_name: str | None = None
     fcra_number: str | None = None
     fcra_expiry_date: date | None = None
@@ -34,6 +36,8 @@ class OrgProfileIn(BaseModel):
 
 class OrgProfileOut(BaseModel):
     village_id: str
+    district: str
+    taluka: str
     ngo_name: str | None = None
     fcra_number: str | None = None
     fcra_expiry_date: date | None = None
@@ -64,6 +68,8 @@ def _serialize_org(village: Village) -> OrgProfileOut:
     members = village.vdc_members or []
     return OrgProfileOut(
         village_id=village.id,
+        district=village.district,
+        taluka=village.taluka,
         ngo_name=village.ngo_name,
         fcra_number=village.fcra_number or village.ngo_name,
         fcra_expiry_date=village.fcra_expiry_date,
@@ -143,6 +149,10 @@ async def update_village_org(
     if not village:
         raise HTTPException(status_code=404, detail="Village not found")
 
+    if body.district is not None:
+        village.district = body.district.strip() or village.district
+    if body.taluka is not None:
+        village.taluka = body.taluka.strip() or village.taluka
     if body.ngo_name is not None:
         village.ngo_name = body.ngo_name.strip() or None
     if body.fcra_number is not None:
@@ -202,6 +212,10 @@ async def update_admin_village_org(
     if not village:
         raise HTTPException(status_code=404, detail="Village not found")
 
+    if body.district is not None:
+        village.district = body.district.strip() or village.district
+    if body.taluka is not None:
+        village.taluka = body.taluka.strip() or village.taluka
     if body.ngo_name is not None:
         village.ngo_name = body.ngo_name.strip() or None
     if body.fcra_number is not None:

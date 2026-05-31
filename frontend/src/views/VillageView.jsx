@@ -296,7 +296,22 @@ function StatCard({ label, value, note }) {
 
 function ProposalTab({ me, onUpdate, api }) {
   const [proposal, setProposal] = useState(null);
-  const [form, setForm] = useState({ focus_areas: [], per_capita_income: "", description: "", community_context: "", key_activities: "" });
+  const [form, setForm] = useState({
+    district: "",
+    taluka: "",
+    village_lead_name: "",
+    village_lead_phone: "",
+    ngo_name: "",
+    fcra_number: "",
+    fcra_expiry_date: "",
+    ngo_contact_name: "",
+    ngo_contact_phone: "",
+    focus_areas: [],
+    per_capita_income: "",
+    description: "",
+    community_context: "",
+    key_activities: "",
+  });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [noProposal, setNoProposal] = useState(false);
@@ -305,17 +320,34 @@ function ProposalTab({ me, onUpdate, api }) {
   const readonly = proposal?.status === "ACCEPTED";
 
   useEffect(() => {
+    if (!me) return;
+    setForm((prev) => ({
+      ...prev,
+      district: me.district || "",
+      taluka: me.taluka || "",
+      village_lead_name: me.village_lead_name || "",
+      village_lead_phone: me.village_lead_phone || "",
+      ngo_name: me.ngo_name || "",
+      fcra_number: me.fcra_number || "",
+      fcra_expiry_date: me.fcra_expiry_date || "",
+      ngo_contact_name: me.ngo_contact_name || "",
+      ngo_contact_phone: me.ngo_contact_phone || "",
+    }));
+  }, [me]);
+
+  useEffect(() => {
     api.getProposal().then((p) => {
       setNoProposal(false);
       setLoadError(null);
       setProposal(p);
-      setForm({
+      setForm((prev) => ({
+        ...prev,
         focus_areas: p.focus_areas || (p.focus_area ? p.focus_area.split(",").map((item) => item.trim()).filter(Boolean) : []),
         per_capita_income: p.per_capita_income || "",
         description: p.description || "",
         community_context: p.community_context || "",
         key_activities: p.key_activities || "",
-      });
+      }));
     }).catch((err) => {
       if ((err.message || "").toLowerCase().includes("no proposal yet")) {
         setLoadError(null);
@@ -333,12 +365,30 @@ function ProposalTab({ me, onUpdate, api }) {
     setSuccess(null);
     setLoading(true);
     try {
-      const body = { ...form, submit };
+      const body = {
+        focus_areas: form.focus_areas,
+        per_capita_income: form.per_capita_income,
+        description: form.description,
+        community_context: form.community_context,
+        key_activities: form.key_activities,
+        submit,
+      };
       const p = proposal
         ? await api.updateProposal(body)
         : await api.createProposal(body);
+      await api.updateOrg({
+        district: form.district,
+        taluka: form.taluka,
+        village_lead_name: form.village_lead_name,
+        village_lead_phone: form.village_lead_phone,
+        ngo_name: form.ngo_name,
+        fcra_number: form.fcra_number,
+        fcra_expiry_date: form.fcra_expiry_date || null,
+        ngo_contact_name: form.ngo_contact_name,
+        ngo_contact_phone: form.ngo_contact_phone,
+      });
       setProposal(p);
-      setSuccess(submit ? "Proposal submitted!" : "Draft saved.");
+      setSuccess(submit ? "Proposal submitted and village details saved!" : "Draft saved and village details updated!");
       if (submit) {
         const fresh = await api.getMe();
         onUpdate(fresh);
@@ -386,6 +436,124 @@ function ProposalTab({ me, onUpdate, api }) {
         </div>
       </div>
       <p className="text-xs text-gray-500">Current Village ID: {me?.id || "unknown"}</p>
+
+      <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">Village Details</h3>
+          {!canEdit && <span className="text-xs text-gray-400">Read only</span>}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.district}
+                onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.district || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Taluka</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.taluka}
+                onChange={(e) => setForm((p) => ({ ...p, taluka: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.taluka || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_name}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_phone}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.ngo_name}
+                onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Number</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.fcra_number}
+                onChange={(e) => setForm((p) => ({ ...p, fcra_number: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_number || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
+            {canEdit ? (
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.fcra_expiry_date}
+                onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.ngo_contact_name}
+                onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Contact</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.ngo_contact_phone}
+                onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
