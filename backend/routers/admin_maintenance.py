@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from alembic import command
 from alembic.config import Config
-from jose import JWTError, jwt
 
 from ..auth import require_role
 from ..config import settings
@@ -13,11 +12,6 @@ from ..db import engine
 
 router = APIRouter(tags=["admin-maintenance"])
 admin_only = require_role("ADMIN")
-
-
-class ResetTablesRequest(BaseModel):
-    confirm_phrase: str
-    admin_password: str | None = None
 
 
 class ResetTablesResponse(BaseModel):
@@ -30,15 +24,6 @@ def _run_alembic_upgrade_head() -> None:
     alembic_ini = backend_dir / "alembic.ini"
     cfg = Config(str(alembic_ini))
     command.upgrade(cfg, "head")
-
-
-def _validate_admin_query_token(access_token: str) -> None:
-    try:
-        payload = jwt.decode(access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-    except JWTError as exc:
-        raise HTTPException(status_code=401, detail="Invalid access token") from exc
-    if payload.get("role") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Admin access required")
 
 
 def _validate_admin_password(admin_password: str) -> None:
@@ -58,12 +43,9 @@ async def _reset_schema_and_migrate() -> None:
 
 @router.post("/admin/maintenance/reset-tables", response_model=ResetTablesResponse)
 @router.post("/reset-tables", response_model=ResetTablesResponse)
-async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
+async def reset_tables(_=Depends(admin_only)):
     if not settings.enable_reset_tables_endpoint:
         raise HTTPException(status_code=403, detail="Reset endpoint is disabled")
-
-    if body.confirm_phrase != "RESET ALL TABLES":
-        raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
 
     await _reset_schema_and_migrate()
 
@@ -76,23 +58,12 @@ async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
 @router.get("/admin/maintenance/reset-tables", response_model=ResetTablesResponse)
 @router.get("/reset-tables", response_model=ResetTablesResponse)
 async def reset_tables_browser(
-    confirm_phrase: str = Query(...),
-    access_token: str | None = Query(default=None),
-    admin_password: str | None = Query(default=None),
+    admin_password: str = Query(...),
 ):
     if not settings.enable_reset_tables_endpoint:
         raise HTTPException(status_code=403, detail="Reset endpoint is disabled")
 
-    if confirm_phrase != "RESET ALL TABLES":
-        raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
-
-    if admin_password:
-        _validate_admin_password(admin_password)
-    elif access_token:
-        _validate_admin_query_token(access_token)
-    else:
-        raise HTTPException(status_code=401, detail="Provide access_token or admin_password")
-
+    _validate_admin_password(admin_password)
     await _reset_schema_and_migrate()
 
     return ResetTablesResponse(
