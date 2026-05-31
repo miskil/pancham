@@ -516,19 +516,6 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
-            {canEdit ? (
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.fcra_expiry_date}
-                onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">Not filled in</span>}</p>
-            )}
-          </div>
-          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
             {canEdit ? (
               <input
@@ -550,6 +537,19 @@ function ProposalTab({ me, onUpdate, api }) {
               />
             ) : (
               <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
+            {canEdit ? (
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.fcra_expiry_date}
+                onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">Not filled in</span>}</p>
             )}
           </div>
         </div>
@@ -684,7 +684,6 @@ function OrgTab({ me, onUpdate, api }) {
     ngo_contact_phone: "",
     village_lead_name: "",
     village_lead_phone: "",
-    ngo_whatsapp_phone: "",
     vdc_members: Array.from({ length: 5 }, () => ({ name: "", role: "", phone: "" })),
   });
 
@@ -704,7 +703,6 @@ function OrgTab({ me, onUpdate, api }) {
         ngo_contact_phone: data.ngo_contact_phone || "",
         village_lead_name: data.village_lead_name || "",
         village_lead_phone: data.village_lead_phone || "",
-        ngo_whatsapp_phone: data.ngo_whatsapp_phone || "",
         vdc_members: members,
       });
     }).catch(() => {}).finally(() => setLoading(false));
@@ -731,7 +729,6 @@ function OrgTab({ me, onUpdate, api }) {
         ngo_contact_phone: form.ngo_contact_phone,
         village_lead_name: form.village_lead_name,
         village_lead_phone: form.village_lead_phone,
-        ngo_whatsapp_phone: form.ngo_whatsapp_phone,
         vdc_members: form.vdc_members.filter((m) => m.name.trim()),
       });
       if (onUpdate) {
@@ -746,9 +743,6 @@ function OrgTab({ me, onUpdate, api }) {
     }
   }
 
-  const waNumber = (form.ngo_whatsapp_phone || "").replace(/[^\d]/g, "");
-  const waLink = waNumber ? `https://wa.me/${waNumber}` : "";
-
   if (loading) {
     return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading org details…</div>;
   }
@@ -758,11 +752,6 @@ function OrgTab({ me, onUpdate, api }) {
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-gray-700">Organization</h2>
         <div className="flex items-center gap-2">
-          {waLink && (
-            <a href={waLink} target="_blank" rel="noopener noreferrer" className="btn-sm bg-green-600">
-              WhatsApp NGO
-            </a>
-          )}
           <button onClick={save} disabled={saving} className="btn-sm bg-primary-700 disabled:opacity-60">
             {saving ? "Saving..." : "Save"}
           </button>
@@ -825,15 +814,6 @@ function OrgTab({ me, onUpdate, api }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
-            <input
-              type="date"
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={form.fcra_expiry_date}
-              onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
-            />
-          </div>
-          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
             <input
               className="w-full border rounded px-3 py-2 text-sm"
@@ -849,16 +829,15 @@ function OrgTab({ me, onUpdate, api }) {
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
             />
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Phone</label>
-          <input className="w-full border rounded px-3 py-2 text-sm" value={form.ngo_whatsapp_phone}
-            onChange={(e) => setForm((p) => ({ ...p, ngo_whatsapp_phone: e.target.value }))}
-            placeholder="e.g. 919876543210"
-          />
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
+            <input
+              type="date"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.fcra_expiry_date}
+              onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
+            />
+          </div>
         </div>
       </div>
 
