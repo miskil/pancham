@@ -441,7 +441,7 @@ function ProposalTab({ me, onUpdate, api }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">Village Name</label>
-            <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
@@ -593,16 +593,19 @@ function ProposalTab({ me, onUpdate, api }) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">गावाच दर डोई उत्पन्न</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">गावाच दर डोई उत्पन्न (रु.)</label>
         {canEdit ? (
           <input
+            type="number"
+            min="0"
             className="w-full border rounded px-3 py-2 text-sm"
+            placeholder="उदा. 4500"
             value={form.per_capita_income}
             onChange={(e) => setForm((p) => ({ ...p, per_capita_income: e.target.value }))}
           />
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-            {form.per_capita_income || <span className="text-gray-400 italic">Not filled in</span>}
+            {form.per_capita_income ? `Rs ${form.per_capita_income}` : <span className="text-gray-400 italic">Not filled in</span>}
           </p>
         )}
       </div>
@@ -1114,7 +1117,7 @@ function VillageOrgReadOnly({ village }) {
   if (!hasOrg) return null;
   return (
     <div className="mt-3 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
-      <p><span className="font-medium">Village Name:</span> {village.name || "-"}</p>
+      <p className="text-lg font-bold text-gray-900">{village.name || "-"}</p>
       <p><span className="font-medium">FCRA Number:</span> {village.fcra_number || village.ngo_name || "-"}</p>
       <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
       <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>

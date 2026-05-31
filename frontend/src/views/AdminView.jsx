@@ -686,8 +686,8 @@ function ProposalsTab() {
               )}
               {!!selected.per_capita_income && (
                 <div>
-                  <span className="text-xs text-gray-500 uppercase">गावाच दर डोई उत्पन्न</span>
-                  <p className="text-gray-800">{selected.per_capita_income}</p>
+                  <span className="text-xs text-gray-500 uppercase">गावाच दर डोई उत्पन्न (रु.)</span>
+                  <p className="text-gray-800">Rs {selected.per_capita_income}</p>
                 </div>
               )}
               {!!selected.description && (
@@ -1509,7 +1509,7 @@ function VillageOrgReadOnly({ village }) {
   if (!hasOrg) return null;
   return (
     <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
-      <p><span className="font-medium">Village Name:</span> {village.name || "-"}</p>
+      <p className="text-lg font-bold text-gray-900">{village.name || "-"}</p>
       <p><span className="font-medium">District:</span> {village.district || "-"}</p>
       <p><span className="font-medium">Taluka:</span> {village.taluka || "-"}</p>
       <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>

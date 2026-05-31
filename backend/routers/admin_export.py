@@ -123,7 +123,7 @@ async def export_proposal(
         _heading(doc, "Proposal Details", level=2)
         focus_areas = ", ".join([item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()])
         _row(doc, "Focus Areas", focus_areas or "")
-        _row(doc, "गावाच दर डोई उत्पन्न", proposal.per_capita_income or "")
+        _row(doc, "गावाच दर डोई उत्पन्न (रु.)", f"Rs {proposal.per_capita_income}" if proposal.per_capita_income else "")
         doc.add_paragraph()
 
         _heading(doc, "गावाची भौगोलीक आणि सामाजीक माहिती", level=2)
