@@ -314,7 +314,6 @@ function ProposalTab({ me, onUpdate, api }) {
   });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [noProposal, setNoProposal] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const readonly = proposal?.status === "ACCEPTED";
@@ -337,7 +336,6 @@ function ProposalTab({ me, onUpdate, api }) {
 
   useEffect(() => {
     api.getProposal().then((p) => {
-      setNoProposal(false);
       setLoadError(null);
       setProposal(p);
       setForm((prev) => ({
@@ -351,10 +349,8 @@ function ProposalTab({ me, onUpdate, api }) {
     }).catch((err) => {
       if ((err.message || "").toLowerCase().includes("no proposal yet")) {
         setLoadError(null);
-        setNoProposal(true);
         return;
       }
-      setNoProposal(false);
       setLoadError(err.message || "Failed to load proposal");
     });
   }, [api]);
@@ -562,11 +558,6 @@ function ProposalTab({ me, onUpdate, api }) {
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
           <strong>Admin notes:</strong> {proposal.reviewer_notes}
-        </div>
-      )}
-      {noProposal && !proposal && (
-        <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
-          No proposal record found for this village ID on the current server.
         </div>
       )}
       {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
@@ -1123,6 +1114,7 @@ function VillageOrgReadOnly({ village }) {
   if (!hasOrg) return null;
   return (
     <div className="mt-3 rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+      <p><span className="font-medium">Village Name:</span> {village.name || "-"}</p>
       <p><span className="font-medium">FCRA Number:</span> {village.fcra_number || village.ngo_name || "-"}</p>
       <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
       <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
