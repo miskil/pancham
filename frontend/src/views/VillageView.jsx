@@ -443,6 +443,10 @@ function ProposalTab({ me, onUpdate, api }) {
           {!canEdit && <span className="text-xs text-gray-400">Read only</span>}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Name</label>
+            <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+          </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
             {canEdit ? (
