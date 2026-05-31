@@ -7,7 +7,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
-const TABS = ["Dashboard", "Onboard", "Proposals", "Plans", "Status", "Funding", "Org", "Users"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -75,10 +75,7 @@ export function AdminView() {
           <span className="topbar-title">Pancham Admin</span>
           <p className="topbar-subtitle">Manage village onboarding, keep review cycles moving, and curate donor-facing reporting from one production workspace.</p>
         </div>
-        <div className="hero-panel max-w-sm">
-          <p className="eyebrow text-primary-50/70">Control Surface</p>
-          <p className="mt-2 text-sm text-primary-50/85">Every village record, stage, contact, and publishing action stays visible without losing the field context.</p>
-        </div>
+
       </header>
       <div className="tabbar">
         {TABS.map((t) => (
