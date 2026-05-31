@@ -173,7 +173,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Dashboard" && <DashboardTab me={me} api={api} />}
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
-        {tab === "Org" && <OrgTab api={api} />}
+        {tab === "Org" && <OrgTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Funding" && <FundingTab api={api} me={me} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
@@ -671,10 +671,13 @@ function ProposalTab({ me, onUpdate, api }) {
   );
 }
 
-function OrgTab({ api }) {
+function OrgTab({ me, onUpdate, api }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    district: "",
+    taluka: "",
+    ngo_name: "",
     fcra_number: "",
     fcra_expiry_date: "",
     ngo_contact_name: "",
@@ -692,6 +695,9 @@ function OrgTab({ api }) {
         .map((m) => ({ name: m.name || "", role: m.role || "", phone: m.phone || "" }));
       while (members.length < 5) members.push({ name: "", role: "", phone: "" });
       setForm({
+        district: data.district || me?.district || "",
+        taluka: data.taluka || me?.taluka || "",
+        ngo_name: data.ngo_name || "",
         fcra_number: data.fcra_number || data.ngo_name || "",
         fcra_expiry_date: data.fcra_expiry_date || "",
         ngo_contact_name: data.ngo_contact_name || "",
@@ -702,7 +708,7 @@ function OrgTab({ api }) {
         vdc_members: members,
       });
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [api]);
+  }, [api, me]);
 
   function updateMember(i, key, value) {
     setForm((prev) => {
@@ -716,6 +722,9 @@ function OrgTab({ api }) {
     setSaving(true);
     try {
       await api.updateOrg({
+        district: form.district,
+        taluka: form.taluka,
+        ngo_name: form.ngo_name,
         fcra_number: form.fcra_number,
         fcra_expiry_date: form.fcra_expiry_date || null,
         ngo_contact_name: form.ngo_contact_name,
@@ -725,6 +734,10 @@ function OrgTab({ api }) {
         ngo_whatsapp_phone: form.ngo_whatsapp_phone,
         vdc_members: form.vdc_members.filter((m) => m.name.trim()),
       });
+      if (onUpdate) {
+        const fresh = await api.getMe();
+        onUpdate(fresh);
+      }
       alert("Org details saved");
     } catch (err) {
       alert(err.message);
@@ -757,52 +770,81 @@ function OrgTab({ api }) {
       </div>
 
       <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700 space-y-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Name</label>
+            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
             <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Lead name"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.district}
+              onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Taluka</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.taluka}
+              onChange={(e) => setForm((p) => ({ ...p, taluka: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.village_lead_name}
               onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
             <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Lead contact"
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.village_lead_phone}
               onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
             />
           </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Number</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
             <input
-              className="border rounded px-3 py-2 text-sm"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={form.ngo_name}
+              onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Number</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.fcra_number}
               onChange={(e) => setForm((p) => ({ ...p, fcra_number: e.target.value }))}
               placeholder="FCRA number"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
             <input
               type="date"
-              className="border rounded px-3 py-2 text-sm"
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.fcra_expiry_date}
               onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
             />
           </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Contact</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
             <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Contact person"
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.ngo_contact_name}
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))}
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Contact</label>
             <input
-              className="border rounded px-3 py-2 text-sm"
-              placeholder="Contact phone"
+              className="w-full border rounded px-3 py-2 text-sm"
               value={form.ngo_contact_phone}
               onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
             />
