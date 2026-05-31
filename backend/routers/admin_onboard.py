@@ -16,8 +16,10 @@ admin_only = require_role("ADMIN")
 
 class OnboardRequest(BaseModel):
     name: str
-    district: str
-    taluka: str
+    contact_whatsapp: str | None = None
+    # legacy / detailed fields still accepted if sent
+    district: str = "-"
+    taluka: str = "-"
     population: int | None = None
     ngo_name: str | None = None
     ngo_contact_name: str | None = None
@@ -112,6 +114,7 @@ async def onboard_village(body: OnboardRequest, db: AsyncSession = Depends(get_d
         ngo_name=(body.ngo_name or "").strip() or None,
         ngo_contact_name=(body.ngo_contact_name or "").strip() or None,
         ngo_contact_phone=(body.ngo_contact_phone or "").strip() or None,
+        ngo_whatsapp_phone=(body.contact_whatsapp or "").replace(" ", "").replace("+", "") or None,
         village_lead_name=(body.village_lead_name or "").strip() or None,
         village_lead_phone=(body.village_lead_phone or "").strip() or None,
         bhau_enabled=body.bhau_enabled,

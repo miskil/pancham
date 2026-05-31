@@ -217,17 +217,7 @@ function StatCard({ label, value }) {
 function OnboardTab({ villageViewEnabled, onPreview }) {
   const [villages, setVillages] = useState([]);
   const [expandedUsers, setExpandedUsers] = useState(null); // village id
-  const [form, setForm] = useState({
-    name: "",
-    district: "",
-    taluka: "",
-    population: "",
-    ngo_name: "",
-    ngo_contact_name: "",
-    ngo_contact_phone: "",
-    village_lead_name: "",
-    village_lead_phone: "",
-  });
+  const [form, setForm] = useState({ name: "", contact_whatsapp: "" });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -245,20 +235,10 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
     setLoading(true);
     setResult(null);
     try {
-      const v = await api.onboardVillage({ ...form, population: form.population ? +form.population : null });
-      setResult(v);
+      const v = await api.onboardVillage({ name: form.name, contact_whatsapp: form.contact_whatsapp });
+      setResult({ ...v, contact_whatsapp: form.contact_whatsapp });
       setVillages((prev) => [v, ...prev]);
-      setForm({
-        name: "",
-        district: "",
-        taluka: "",
-        population: "",
-        ngo_name: "",
-        ngo_contact_name: "",
-        ngo_contact_phone: "",
-        village_lead_name: "",
-        village_lead_phone: "",
-      });
+      setForm({ name: "", contact_whatsapp: "" });
     } catch (err) {
       alert(err.message);
     } finally {
@@ -270,115 +250,66 @@ function OnboardTab({ villageViewEnabled, onPreview }) {
     <div className="space-y-6">
       <div className="bg-white rounded-xl border p-5">
         <h2 className="font-semibold text-gray-700 mb-4">Onboard a Village</h2>
-        <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {["name", "district", "taluka"].map((f) => (
-            <div key={f}>
-              <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">{f}</label>
-              <input
-                required
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form[f]}
-                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
-              />
-            </div>
-          ))}
+        <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Population</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Village Name</label>
             <input
-              type="number"
+              required
               className="w-full border rounded px-3 py-2 text-sm"
-              value={form.population}
-              onChange={(e) => setForm((p) => ({ ...p, population: e.target.value }))}
+              placeholder="e.g. Kusumbi"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             />
           </div>
-          <div className="sm:col-span-2 grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.village_lead_name}
-                onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.village_lead_phone}
-                onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
-              />
-            </div>
-          </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Contact WhatsApp Number</label>
             <input
+              required
               className="w-full border rounded px-3 py-2 text-sm"
-              value={form.ngo_name}
-              onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
+              placeholder="e.g. 919876543210"
+              value={form.contact_whatsapp}
+              onChange={(e) => setForm((p) => ({ ...p, contact_whatsapp: e.target.value }))}
             />
+            <p className="text-xs text-gray-400 mt-1">Include country code, no spaces or + (e.g. 919876543210)</p>
           </div>
-          <div className="sm:col-span-2 grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Contact Person</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.ngo_contact_name}
-                onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.ngo_contact_phone}
-                onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="sm:col-span-2">
-            <button type="submit" disabled={loading} className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
-              {loading ? "Creating…" : "Create Village"}
-            </button>
-          </div>
+          <button type="submit" disabled={loading} className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
+            {loading ? "Creating…" : "Create Village"}
+          </button>
         </form>
-        {result && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-sm space-y-3">
-            <p className="font-semibold text-green-800">Village created — share these credentials with the village lead:</p>
-            <div className="grid grid-cols-1 gap-2">
-              <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
-                <span className="text-gray-500 text-xs w-24 shrink-0">Username</span>
-                <span className="font-mono font-semibold text-gray-900 flex-1">{result.login_username}</span>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(result.login_username)}
-                  className="text-xs text-primary-700 hover:text-primary-900 font-medium shrink-0"
-                >
-                  Copy
-                </button>
+        {result && (() => {
+          const waNum = (result.contact_whatsapp || "").replace(/[^\d]/g, "");
+          const waMsg = encodeURIComponent(
+            `Pancham login details for ${result.name}:\nUsername: ${result.login_username}\nPassword: ${result.temp_password}\n\nLogin at: ${window.location.origin}`
+          );
+          const waLink = waNum ? `https://wa.me/${waNum}?text=${waMsg}` : null;
+          return (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-sm space-y-3">
+              <p className="font-semibold text-green-800">Village created!</p>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
+                  <span className="text-gray-500 text-xs w-24 shrink-0">Username</span>
+                  <span className="font-mono font-semibold text-gray-900 flex-1">{result.login_username}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
+                  <span className="text-gray-500 text-xs w-24 shrink-0">Password</span>
+                  <span className="font-mono font-semibold text-gray-900 flex-1">{result.temp_password}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-3 bg-white rounded-lg border border-green-200 px-3 py-2">
-                <span className="text-gray-500 text-xs w-24 shrink-0">Password</span>
-                <span className="font-mono font-semibold text-gray-900 flex-1">{result.temp_password}</span>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(result.temp_password)}
-                  className="text-xs text-primary-700 hover:text-primary-900 font-medium shrink-0"
+              {waLink ? (
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-lg bg-green-600 text-white px-3 py-2.5 text-sm font-semibold hover:bg-green-700 transition-colors"
                 >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigator.clipboard.writeText(
-                `Pancham login details for ${result.name || "your village"}:\nUsername: ${result.login_username}\nPassword: ${result.temp_password}`
+                  📲 Send credentials via WhatsApp
+                </a>
+              ) : (
+                <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">No WhatsApp number — copy credentials manually.</p>
               )}
-              className="w-full rounded-lg border border-green-300 bg-white px-3 py-2 text-xs font-medium text-green-800 hover:bg-green-100 transition-colors"
-            >
-              Copy full message (for WhatsApp / SMS)
-            </button>
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </div>
 
       <div className="bg-white rounded-xl border p-5">
