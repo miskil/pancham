@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from .db import SessionLocal
@@ -12,6 +13,11 @@ from .routers import village_me, village_proposal, village_plan, village_status,
 from .routers import threads, channels, donor, org, funding
 
 app = FastAPI(title="Pancham API")
+
+
+@app.get("/server/doc", include_in_schema=False)
+async def server_doc_alias():
+    return RedirectResponse(url="/docs", status_code=307)
 
 
 @app.on_event("startup")

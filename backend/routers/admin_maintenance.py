@@ -1,10 +1,11 @@
 import asyncio
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import text
 from alembic import command
 from alembic.config import Config
+from jose import JWTError, jwt
 
 from ..auth import require_role
 from ..config import settings
@@ -30,6 +31,25 @@ def _run_alembic_upgrade_head() -> None:
     command.upgrade(cfg, "head")
 
 
+def _validate_admin_query_token(access_token: str) -> None:
+    try:
+        payload = jwt.decode(access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid access token") from exc
+    if payload.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+async def _reset_schema_and_migrate() -> None:
+    async with engine.begin() as conn:
+        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        await conn.execute(text("CREATE SCHEMA public"))
+        await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+
+    await engine.dispose()
+    await asyncio.to_thread(_run_alembic_upgrade_head)
+
+
 @router.post("/admin/maintenance/reset-tables", response_model=ResetTablesResponse)
 @router.post("/reset-tables", response_model=ResetTablesResponse)
 async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
@@ -39,14 +59,28 @@ async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
     if body.confirm_phrase != "RESET ALL TABLES":
         raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
 
-    # Wipe the schema, then re-run all migrations to recreate tables.
-    async with engine.begin() as conn:
-        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-        await conn.execute(text("CREATE SCHEMA public"))
-        await conn.execute(text("GRANT ALL ON SCHEMA public TO public"))
+    await _reset_schema_and_migrate()
 
-    await engine.dispose()
-    await asyncio.to_thread(_run_alembic_upgrade_head)
+    return ResetTablesResponse(
+        ok=True,
+        message="All tables were reset and recreated from migrations.",
+    )
+
+
+@router.get("/admin/maintenance/reset-tables", response_model=ResetTablesResponse)
+@router.get("/reset-tables", response_model=ResetTablesResponse)
+async def reset_tables_browser(
+    confirm_phrase: str = Query(...),
+    access_token: str = Query(...),
+):
+    if not settings.enable_reset_tables_endpoint:
+        raise HTTPException(status_code=403, detail="Reset endpoint is disabled")
+
+    if confirm_phrase != "RESET ALL TABLES":
+        raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
+
+    _validate_admin_query_token(access_token)
+    await _reset_schema_and_migrate()
 
     return ResetTablesResponse(
         ok=True,
