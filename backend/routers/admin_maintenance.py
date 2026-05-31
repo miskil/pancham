@@ -17,6 +17,7 @@ admin_only = require_role("ADMIN")
 
 class ResetTablesRequest(BaseModel):
     confirm_phrase: str
+    admin_password: str | None = None
 
 
 class ResetTablesResponse(BaseModel):
@@ -38,6 +39,11 @@ def _validate_admin_query_token(access_token: str) -> None:
         raise HTTPException(status_code=401, detail="Invalid access token") from exc
     if payload.get("role") != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
+
+
+def _validate_admin_password(admin_password: str) -> None:
+    if admin_password != settings.admin_password:
+        raise HTTPException(status_code=401, detail="Invalid admin password")
 
 
 async def _reset_schema_and_migrate() -> None:
@@ -71,7 +77,8 @@ async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
 @router.get("/reset-tables", response_model=ResetTablesResponse)
 async def reset_tables_browser(
     confirm_phrase: str = Query(...),
-    access_token: str = Query(...),
+    access_token: str | None = Query(default=None),
+    admin_password: str | None = Query(default=None),
 ):
     if not settings.enable_reset_tables_endpoint:
         raise HTTPException(status_code=403, detail="Reset endpoint is disabled")
@@ -79,7 +86,13 @@ async def reset_tables_browser(
     if confirm_phrase != "RESET ALL TABLES":
         raise HTTPException(status_code=400, detail="Invalid confirmation phrase")
 
-    _validate_admin_query_token(access_token)
+    if admin_password:
+        _validate_admin_password(admin_password)
+    elif access_token:
+        _validate_admin_query_token(access_token)
+    else:
+        raise HTTPException(status_code=401, detail="Provide access_token or admin_password")
+
     await _reset_schema_and_migrate()
 
     return ResetTablesResponse(
