@@ -49,6 +49,8 @@ class VillageOut(BaseModel):
     taluka: str
     population: int | None
     ngo_name: str | None = None
+    fcra_number: str | None = None
+    fcra_expiry_date: date | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
     village_lead_name: str | None = None
@@ -75,6 +77,8 @@ def village_to_out(v: Village, temp_password: str | None = None, login_username:
         taluka=v.taluka,
         population=v.population,
         ngo_name=v.ngo_name,
+        fcra_number=v.fcra_number,
+        fcra_expiry_date=v.fcra_expiry_date,
         ngo_contact_name=v.ngo_contact_name,
         ngo_contact_phone=v.ngo_contact_phone,
         village_lead_name=v.village_lead_name,
