@@ -10,7 +10,7 @@ from ..auth import require_role
 from ..config import settings
 from ..db import engine
 
-router = APIRouter(prefix="/admin/maintenance", tags=["admin-maintenance"])
+router = APIRouter(tags=["admin-maintenance"])
 admin_only = require_role("ADMIN")
 
 
@@ -30,6 +30,7 @@ def _run_alembic_upgrade_head() -> None:
     command.upgrade(cfg, "head")
 
 
+@router.post("/admin/maintenance/reset-tables", response_model=ResetTablesResponse)
 @router.post("/reset-tables", response_model=ResetTablesResponse)
 async def reset_tables(body: ResetTablesRequest, _=Depends(admin_only)):
     if not settings.enable_reset_tables_endpoint:
