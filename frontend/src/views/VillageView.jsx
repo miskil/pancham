@@ -8,7 +8,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Funding", "Plan", "Status"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status"];
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
   PLAN: 50,
