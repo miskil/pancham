@@ -1505,12 +1505,16 @@ function StatusTab() {
 
 function VillageOrgReadOnly({ village }) {
   if (!village) return null;
-  const hasOrg = village.ngo_name || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
+  const hasOrg = village.district || village.taluka || village.ngo_name || village.fcra_number || village.fcra_expiry_date || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
   if (!hasOrg) return null;
   return (
     <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
+      <p><span className="font-medium">District:</span> {village.district || "-"}</p>
+      <p><span className="font-medium">Taluka:</span> {village.taluka || "-"}</p>
       <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
-      <p><span className="font-medium">Contact:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
+      <p><span className="font-medium">FCRA:</span> {village.fcra_number || "-"}</p>
+      <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
+      <p><span className="font-medium">NGO Lead:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
       <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
     </div>
   );
