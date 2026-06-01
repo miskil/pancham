@@ -33,3 +33,8 @@ export const deleteEvidence = (id) => del(`/village/evidence/${id}`);
 
 export const exportProposal = (id) => download(`/admin/export/proposals/${id}`, "POST");
 export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");
+
+export const listAnubhavPosts = () => get("/anubhav/posts");
+export const createAnubhavPost = (body) => post("/anubhav/posts", body);
+export const updateAnubhavPost = (id, body) => patch(`/anubhav/posts/${id}`, body);
+export const deleteAnubhavPost = (id) => del(`/anubhav/posts/${id}`);

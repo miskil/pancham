@@ -44,3 +44,8 @@ export const exportProposal = (id) => download(`/admin/export/proposals/${id}`, 
 export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");
 export const publishUpdate = (id) => patch(`/admin/status-updates/${id}/publish`);
 export const unpublishUpdate = (id) => patch(`/admin/status-updates/${id}/unpublish`);
+
+export const listAnubhavPosts = () => get("/anubhav/posts");
+export const createAnubhavPost = (body) => post("/anubhav/posts", body);
+export const updateAnubhavPost = (id, body) => patch(`/anubhav/posts/${id}`, body);
+export const deleteAnubhavPost = (id) => del(`/anubhav/posts/${id}`);

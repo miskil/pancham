@@ -8,7 +8,17 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
+const TAB_LABELS = {
+  Dashboard: "Dashboard",
+  Proposal: "प्रस्ताव",
+  Evidence: "पुरावा",
+  Org: "Org",
+  Plan: "योजना",
+  Funding: "निधी",
+  Status: "प्रगती",
+  Anubhav: "Anubhav",
+};
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
   PLAN: 50,
@@ -78,6 +88,10 @@ function makeApi(token) {
     deleteEvidence: (id) => f(`/village/evidence/${id}`, { method: "DELETE" }),
     exportProposal: (id) => dl(`/admin/export/proposals/${id}`, "POST"),
     exportPlan: (id) => dl(`/admin/export/plans/${id}`, "POST"),
+    listAnubhavPosts: () => f("/anubhav/posts"),
+    createAnubhavPost: (b) => f("/anubhav/posts", { method: "POST", body: JSON.stringify(b) }),
+    updateAnubhavPost: (id, b) => f(`/anubhav/posts/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
+    deleteAnubhavPost: (id) => f(`/anubhav/posts/${id}`, { method: "DELETE" }),
   };
 }
 
@@ -163,7 +177,7 @@ export function VillageView({ previewToken } = {}) {
                 ${locked ? "opacity-40 cursor-not-allowed" : ""}
               `}
             >
-              {t} {locked && "🔒"}
+              {TAB_LABELS[t] || t} {locked && "🔒"}
             </button>
           );
         })}
@@ -177,6 +191,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Funding" && <FundingTab api={api} me={me} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
+        {tab === "Anubhav" && <AnubhavTab api={api} />}
       </div>
       </div>
     </div>
@@ -1431,6 +1446,153 @@ function StatusTab({ me, api }) {
             {selected?.id === u.id && <Thread updateId={u.id} />}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function AnubhavTab({ api }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ title: "", body: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", body: "" });
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.listAnubhavPosts();
+      setPosts(data);
+    } catch (err) {
+      setError(err.message || "Failed to load posts");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    if (!form.title.trim() || !form.body.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.createAnubhavPost({ title: form.title.trim(), body: form.body.trim() });
+      setForm({ title: "", body: "" });
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to create post");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleUpdate(post) {
+    try {
+      await api.updateAnubhavPost(post.id, { title: editForm.title.trim(), body: editForm.body.trim() });
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to update post");
+    }
+  }
+
+  async function handleDelete(post) {
+    if (!confirm("Delete this post?")) return;
+    try {
+      await api.deleteAnubhavPost(post.id);
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to delete post");
+    }
+  }
+
+  function startEdit(post) {
+    setEditingId(post.id);
+    setEditForm({ title: post.title, body: post.body });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="surface-card p-5">
+        <h2 className="font-semibold text-lg mb-1">अनुभव</h2>
+        <p className="text-sm text-ink-400 mb-4">Shared experiences and learnings from all villages and admin. Only you can edit your own posts.</p>
+
+        <form onSubmit={handleCreate} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            className="input-field w-full"
+            required
+          />
+          <textarea
+            placeholder="Share your experience or learning…"
+            value={form.body}
+            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            rows={4}
+            className="input-field w-full"
+            required
+          />
+          <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+            {submitting ? "Posting…" : "Post"}
+          </button>
+        </form>
+      </div>
+
+      {loading && <div className="text-sm text-ink-400">Loading…</div>}
+      {error && <div className="text-sm text-red-500">{error}</div>}
+
+      <div className="space-y-4">
+        {posts.map((post) => (
+          <div key={post.id} className="surface-card p-4">
+            {editingId === post.id ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                  className="input-field w-full"
+                />
+                <textarea
+                  value={editForm.body}
+                  onChange={(e) => setEditForm((f) => ({ ...f, body: e.target.value }))}
+                  rows={4}
+                  className="input-field w-full"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdate(post)} className="btn-primary text-sm">Save</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary text-sm">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-ink-800">{post.title}</p>
+                    <p className="text-xs text-ink-400 mt-0.5">
+                      {post.author_display_name} · {new Date(post.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  {post.can_edit && (
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => startEdit(post)} className="text-xs text-primary-600 hover:underline">Edit</button>
+                      <button onClick={() => handleDelete(post)} className="text-xs text-red-500 hover:underline">Delete</button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-ink-700 mt-2 whitespace-pre-wrap">{post.body}</p>
+              </>
+            )}
+          </div>
+        ))}
+        {!loading && posts.length === 0 && (
+          <div className="text-sm text-ink-400 text-center py-8">No posts yet. Be the first to share!</div>
+        )}
       </div>
     </div>
   );

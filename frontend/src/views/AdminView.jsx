@@ -7,7 +7,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { RichText } from "../components/RichText";
 import { VillageView } from "./VillageView";
 
-const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -98,6 +98,7 @@ export function AdminView() {
         {tab === "Funding" && <FundingTab />}
         {tab === "Org" && <OrgTab />}
         {tab === "Users" && <AdminUsersTab />}
+        {tab === "Anubhav" && <AnubhavTab />}
       </div>
       </div>
     </div>
@@ -1517,6 +1518,153 @@ function VillageOrgReadOnly({ village }) {
       <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
       <p><span className="font-medium">NGO Lead:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
       <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
+    </div>
+  );
+}
+
+function AnubhavTab() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ title: "", body: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", body: "" });
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.listAnubhavPosts();
+      setPosts(data);
+    } catch (err) {
+      setError(err.message || "Failed to load posts");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    if (!form.title.trim() || !form.body.trim()) return;
+    setSubmitting(true);
+    try {
+      await api.createAnubhavPost({ title: form.title.trim(), body: form.body.trim() });
+      setForm({ title: "", body: "" });
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to create post");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleUpdate(post) {
+    try {
+      await api.updateAnubhavPost(post.id, { title: editForm.title.trim(), body: editForm.body.trim() });
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to update post");
+    }
+  }
+
+  async function handleDelete(post) {
+    if (!confirm("Delete this post?")) return;
+    try {
+      await api.deleteAnubhavPost(post.id);
+      await load();
+    } catch (err) {
+      alert(err.message || "Failed to delete post");
+    }
+  }
+
+  function startEdit(post) {
+    setEditingId(post.id);
+    setEditForm({ title: post.title, body: post.body });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="surface-card p-5">
+        <h2 className="font-semibold text-lg mb-1">अनुभव</h2>
+        <p className="text-sm text-ink-400 mb-4">Shared experiences and learnings from all villages and admin. Only the author can edit their own posts.</p>
+
+        <form onSubmit={handleCreate} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            className="input-field w-full"
+            required
+          />
+          <textarea
+            placeholder="Share your experience or learning…"
+            value={form.body}
+            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            rows={4}
+            className="input-field w-full"
+            required
+          />
+          <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+            {submitting ? "Posting…" : "Post"}
+          </button>
+        </form>
+      </div>
+
+      {loading && <div className="text-sm text-ink-400">Loading…</div>}
+      {error && <div className="text-sm text-red-500">{error}</div>}
+
+      <div className="space-y-4">
+        {posts.map((post) => (
+          <div key={post.id} className="surface-card p-4">
+            {editingId === post.id ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                  className="input-field w-full"
+                />
+                <textarea
+                  value={editForm.body}
+                  onChange={(e) => setEditForm((f) => ({ ...f, body: e.target.value }))}
+                  rows={4}
+                  className="input-field w-full"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdate(post)} className="btn-primary text-sm">Save</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary text-sm">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-ink-800">{post.title}</p>
+                    <p className="text-xs text-ink-400 mt-0.5">
+                      {post.author_display_name} · {new Date(post.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  {post.can_edit && (
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => startEdit(post)} className="text-xs text-primary-600 hover:underline">Edit</button>
+                      <button onClick={() => handleDelete(post)} className="text-xs text-red-500 hover:underline">Delete</button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-ink-700 mt-2 whitespace-pre-wrap">{post.body}</p>
+              </>
+            )}
+          </div>
+        ))}
+        {!loading && posts.length === 0 && (
+          <div className="text-sm text-ink-400 text-center py-8">No posts yet. Be the first to share!</div>
+        )}
+      </div>
     </div>
   );
 }
