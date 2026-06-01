@@ -10,14 +10,14 @@ import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities
 
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
 const TAB_LABELS = {
-  Dashboard: "Dashboard",
+  Dashboard: "डॅशबोर्ड",
   Proposal: "प्रस्ताव",
   Evidence: "पुरावा",
-  Org: "Org",
+  Org: "संघटन",
   Plan: "योजना",
   Funding: "निधी",
   Status: "प्रगती",
-  Anubhav: "Anubhav",
+  Anubhav: "अनुभव",
 };
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -436,7 +436,7 @@ function ProposalTab({ me, onUpdate, api }) {
   return (
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-700">Village Proposal</h2>
+        <h2 className="font-semibold text-gray-700">गावाचा प्रस्ताव</h2>
         <div className="flex items-center gap-2">
           {proposal && <ExportDocxButton onExport={() => api.exportProposal(proposal.id)} />}
           {proposal && (
@@ -450,16 +450,16 @@ function ProposalTab({ me, onUpdate, api }) {
 
       <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Village Details</h3>
+          <h3 className="text-sm font-semibold text-gray-700">गावाची माहिती</h3>
           {!canEdit && <span className="text-xs text-gray-400">Read only</span>}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Village Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">नाव</label>
             <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">जिल्हा</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -471,7 +471,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Taluka</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">तालुका</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -483,7 +483,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">गाव समन्वयक</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -495,7 +495,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Village Lead Contact</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">गाव समन्वयक फोन(whatsapp)</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -507,7 +507,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -519,7 +519,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Number</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">ए़फसीआरए क्रमांक</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -531,7 +531,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ समन्वयक</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -543,7 +543,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Contact</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ समन्वयक फोन(whatsapp)</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -555,7 +555,7 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">FCRA Expiry Date</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">ए़फसीआरए संपण्याची तारीख</label>
             {canEdit ? (
               <input
                 type="date"
@@ -1008,6 +1008,7 @@ function FundingTab({ api, me }) {
 const DOC_TYPE_LABELS = {
   GRAMSABHA: "Gramsabha Letter",
   PANCHAYAT: "Panchayat Letter",
+  MOU: "MoU",
   OTHER: "Other Document",
 };
 

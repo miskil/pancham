@@ -10,7 +10,7 @@ class SupportEvidence(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     village_id: Mapped[str] = mapped_column(String, ForeignKey("villages.id"), nullable=False)
-    doc_type: Mapped[str] = mapped_column(String, nullable=False)  # GRAMSABHA | PANCHAYAT | OTHER
+    doc_type: Mapped[str] = mapped_column(String, nullable=False)  # GRAMSABHA | PANCHAYAT | MOU | OTHER
     filename: Mapped[str] = mapped_column(String, nullable=False)
     file_url: Mapped[str] = mapped_column(String, nullable=False)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
