@@ -31,6 +31,7 @@ function MilestoneCard({
   readonly,
   currency,
   rate,
+  labels,
   onChange,
   onRemove,
   onAddActivity,
@@ -57,13 +58,13 @@ function MilestoneCard({
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex-1 min-w-0">
           {readonly ? (
-            <h4 className="font-semibold text-ink-900 break-words">{milestone.milestone || `Milestone ${milestoneIndex}`}</h4>
+            <h4 className="font-semibold text-ink-900 break-words">{milestone.milestone || `${labels.milestone} ${milestoneIndex}`}</h4>
           ) : (
             <input
               className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
               value={milestone.milestone || ""}
               onChange={(e) => onChange({ ...milestone, milestone: e.target.value })}
-              placeholder={`Milestone ${milestoneIndex}`}
+              placeholder={`${labels.milestone} ${milestoneIndex}`}
             />
           )}
           <div className="mt-2 flex flex-wrap gap-1">
@@ -99,7 +100,7 @@ function MilestoneCard({
             {currency === "INR" ? "₹" : "$"}{currency === "INR" ? milestoneTotal.toLocaleString("en-IN") : (milestoneTotal / rate).toFixed(2)}
           </span>
           {!readonly && onRemove && (
-            <button onClick={onRemove} title="Remove milestone" className="ml-1 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none">
+            <button onClick={onRemove} title={labels.removeMilestoneTitle} className="ml-1 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none">
               &times;
             </button>
           )}
@@ -107,7 +108,7 @@ function MilestoneCard({
       </div>
 
       <div>
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">Impact</p>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500 mb-2">{labels.impact}</p>
         {readonly ? (
           <p className="rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2 text-sm text-ink-700 whitespace-pre-wrap break-words">
             {milestone.impact || <span className="text-ink-300">—</span>}
@@ -118,17 +119,17 @@ function MilestoneCard({
             className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white resize-none"
             value={milestone.impact || ""}
             onChange={(e) => onChange({ ...milestone, impact: e.target.value })}
-            placeholder="Describe the expected impact of this milestone…"
+            placeholder={labels.impactPlaceholder}
           />
         )}
       </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">Activities</p>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-500">{labels.activity}</p>
           {!readonly && (
             <button onClick={onAddActivity} className="text-xs font-semibold text-primary-700 hover:text-primary-800">
-              + Add activity
+              {labels.addActivity}
             </button>
           )}
         </div>
@@ -163,7 +164,7 @@ function MilestoneCard({
                           ...milestone,
                           activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, activity: e.target.value } : item),
                         })}
-                        placeholder="Activity"
+                        placeholder={labels.activity}
                       />
                       <input
                         className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white"
@@ -193,7 +194,7 @@ function MilestoneCard({
                       />
                     </div>
                     {onRemoveActivity && (
-                      <button onClick={() => onRemoveActivity(activityIndex)} title="Remove activity" className="mt-2 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none flex-shrink-0">
+                      <button onClick={() => onRemoveActivity(activityIndex)} title={labels.removeActivityTitle} className="mt-2 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none flex-shrink-0">
                         &times;
                       </button>
                     )}
@@ -241,7 +242,7 @@ function MilestoneCard({
   );
 }
 
-function YearPanel({ year, rows, readonly, currency, rate, grandTotal, onChange }) {
+function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, onChange }) {
   const data = rows && rows.length > 0 ? rows : [createEmptyMilestone()];
   const yearTotal = data.reduce((sum, milestone) => {
     return sum + (milestone.activities || []).reduce((activitySum, activity) => activitySum + (parseFloat(activity.amount) || 0), 0);
@@ -296,6 +297,7 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, onChange 
             readonly={readonly}
             currency={currency}
             rate={rate}
+            labels={labels}
             onChange={(next) => updateMilestone(milestoneIndex, next)}
             onRemove={readonly ? null : () => removeMilestone(milestoneIndex)}
             onAddActivity={readonly ? null : () => addActivity(milestoneIndex)}
@@ -307,7 +309,7 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, onChange 
       {!readonly && (
         <div className="mt-3">
           <button onClick={addMilestone} className="text-xs font-semibold text-primary-700 hover:text-primary-800">
-            + Add milestone
+            {labels.addMilestone}
           </button>
         </div>
       )}
@@ -315,7 +317,19 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, onChange 
   );
 }
 
-export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
+const DEFAULT_LABELS = {
+  milestone: "Milestone",
+  impact: "Impact",
+  impactPlaceholder: "Describe the expected impact of this milestone...",
+  activity: "Activity",
+  addActivity: "+ Add activity",
+  addMilestone: "+ Add milestone",
+  removeActivityTitle: "Remove activity",
+  removeMilestoneTitle: "Remove milestone",
+};
+
+export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }) {
+  const mergedLabels = { ...DEFAULT_LABELS, ...(labels || {}) };
   const initialMeta = getPlanMeta(plan?.plan_data);
   const [currency, setCurrency] = useState(initialMeta.currency || DEFAULT_PLAN_META.currency);
   const [rate, setRate] = useState(initialMeta.rate || DEFAULT_PLAN_META.rate);
@@ -437,6 +451,7 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange }) {
           currency={currency}
           rate={rate}
           grandTotal={grandTotalINR}
+          labels={mergedLabels}
           onChange={(rows) => handleYearChange(year, rows)}
         />
       ))}

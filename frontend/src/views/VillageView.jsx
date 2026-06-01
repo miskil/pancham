@@ -19,6 +19,13 @@ const TAB_LABELS = {
   Status: "प्रगती",
   Anubhav: "अनुभव",
 };
+const VILLAGE_PLAN_LABELS = {
+  milestone: "महत्वाचा टप्पा",
+  impact: "परिणाम",
+  activity: "कार्य",
+  addActivity: "+ कार्य जोडा",
+  addMilestone: "+ महत्वाचा टप्पा जोडा",
+};
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
   PLAN: 50,
@@ -1250,6 +1257,7 @@ function ProjectTab({ me, api }) {
         <PlanMilestonesViewer
           plan={{ plan_data: draftData }}
           readonly={false}
+          labels={VILLAGE_PLAN_LABELS}
           onChange={setDraftData}
         />
       </div>
@@ -1320,6 +1328,7 @@ function ProjectTab({ me, api }) {
           <PlanMilestonesViewer
             plan={{ ...baseline, plan_data: baselineDataForView }}
             readonly={!baselineEditable}
+            labels={VILLAGE_PLAN_LABELS}
             onChange={baselineEditable ? setDraftData : undefined}
           />
         </div>
@@ -1339,6 +1348,7 @@ function ProjectTab({ me, api }) {
             <PlanMilestonesViewer
               plan={{ plan_data: currentWipData }}
               readonly={false}
+              labels={VILLAGE_PLAN_LABELS}
               onChange={setDraftData}
             />
           ) : (
