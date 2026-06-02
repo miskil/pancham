@@ -4,6 +4,7 @@ from .admin_user import AdminUser
 from .proposal import Proposal, ProposalAmendment
 from .plan import ProjectPlan
 from .status_update import StatusUpdate, MediaFile
+from .anubhav import AnubhavPost, AnubhavMediaFile
 from .thread import UpdateThread, VillageChannel
 from .funding import FundingRound
 
@@ -14,6 +15,8 @@ __all__ = [
     "ProjectPlan",
     "StatusUpdate",
     "MediaFile",
+    "AnubhavPost",
+    "AnubhavMediaFile",
     "UpdateThread",
     "VillageChannel",
     "FundingRound",

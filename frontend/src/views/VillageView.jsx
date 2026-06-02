@@ -100,6 +100,11 @@ function makeApi(token) {
     createAnubhavPost: (b) => f("/anubhav/posts", { method: "POST", body: JSON.stringify(b) }),
     updateAnubhavPost: (id, b) => f(`/anubhav/posts/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
     deleteAnubhavPost: (id) => f(`/anubhav/posts/${id}`, { method: "DELETE" }),
+    uploadAnubhavMedia: (id, formData) => {
+      const headers = { Authorization: `Bearer ${token}` };
+      return fetch(`${import.meta.env.VITE_API_URL || "/api"}/anubhav/posts/${id}/media`, { method: "POST", body: formData, headers })
+        .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
+    },
   };
 }
 

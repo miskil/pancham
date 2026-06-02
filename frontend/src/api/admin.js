@@ -1,4 +1,4 @@
-import { get, post, patch, del, download } from "./client";
+import { get, post, patch, del, postForm, download } from "./client";
 
 export const listVillages = () => get("/admin/villages");
 export const getPreviewToken = (id) => post(`/admin/villages/${id}/preview-token`);
@@ -49,3 +49,4 @@ export const listAnubhavPosts = () => get("/anubhav/posts");
 export const createAnubhavPost = (body) => post("/anubhav/posts", body);
 export const updateAnubhavPost = (id, body) => patch(`/anubhav/posts/${id}`, body);
 export const deleteAnubhavPost = (id) => del(`/anubhav/posts/${id}`);
+export const uploadAnubhavMedia = (id, formData) => postForm(`/anubhav/posts/${id}/media`, formData);

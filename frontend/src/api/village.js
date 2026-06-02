@@ -38,3 +38,4 @@ export const listAnubhavPosts = () => get("/anubhav/posts");
 export const createAnubhavPost = (body) => post("/anubhav/posts", body);
 export const updateAnubhavPost = (id, body) => patch(`/anubhav/posts/${id}`, body);
 export const deleteAnubhavPost = (id) => del(`/anubhav/posts/${id}`);
+export const uploadAnubhavMedia = (id, formData) => postForm(`/anubhav/posts/${id}/media`, formData);

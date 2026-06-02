@@ -31,6 +31,8 @@ export function AnubhavFeed({ api }) {
 
   const [form, setForm] = useState({ title: "", body: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", body: "" });
@@ -56,15 +58,40 @@ export function AnubhavFeed({ api }) {
     e.preventDefault();
     if (!form.title.trim() || !form.body.trim()) return;
     setSubmitting(true);
+    setPhotoError(null);
     try {
-      await api.createAnubhavPost({ title: form.title.trim(), body: form.body.trim() });
+      const created = await api.createAnubhavPost({ title: form.title.trim(), body: form.body.trim() });
+      if (photo && created?.id && typeof api.uploadAnubhavMedia === "function") {
+        const formData = new FormData();
+        formData.append("file", photo);
+        await api.uploadAnubhavMedia(created.id, formData);
+      }
       setForm({ title: "", body: "" });
+      setPhoto(null);
       await load();
     } catch (err) {
-      alert(err.message || "Failed to create post");
+      const message = err.message || "Failed to create post";
+      setPhotoError(message);
+      alert(message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handlePhotoChange(e) {
+    const selected = e.target.files?.[0] || null;
+    if (!selected) {
+      setPhoto(null);
+      setPhotoError(null);
+      return;
+    }
+    if (!selected.type || !selected.type.startsWith("image/")) {
+      setPhotoError("Please select an image file only");
+      setPhoto(null);
+      return;
+    }
+    setPhoto(selected);
+    setPhotoError(null);
   }
 
   async function handleUpdate(post) {
@@ -133,14 +160,16 @@ export function AnubhavFeed({ api }) {
             required
           />
           <div className="anubhav-form-actions">
-            <div className="anubhav-meta-actions" aria-hidden="true">
-              <span>Photo</span>
-              <span>Location</span>
-            </div>
+            <label className="anubhav-photo-btn">
+              Add Photo
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            </label>
+            {photo && <span className="anubhav-photo-name">{photo.name}</span>}
             <button type="submit" disabled={submitting} className="anubhav-post-btn">
               {submitting ? "Posting..." : "Post Story"}
             </button>
           </div>
+          {photoError && <p className="text-xs text-red-600">{photoError}</p>}
         </form>
       </section>
 
@@ -213,9 +242,23 @@ export function AnubhavFeed({ api }) {
                     </button>
                   )}
 
-                  <div className="anubhav-story-visual" aria-hidden="true">
-                    <span className="anubhav-visual-badge">{post.author_display_name}</span>
-                  </div>
+                  {Array.isArray(post.media_files) && post.media_files.length > 0 ? (
+                    <div className="anubhav-media-grid">
+                      {post.media_files.map((media) => (
+                        <img
+                          key={media.id}
+                          src={media.file_url}
+                          alt={`${post.title} media`}
+                          className="anubhav-media-item"
+                          loading="lazy"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="anubhav-story-visual" aria-hidden="true">
+                      <span className="anubhav-visual-badge">{post.author_display_name}</span>
+                    </div>
+                  )}
                 </>
               )}
             </article>
