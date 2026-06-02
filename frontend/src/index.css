@@ -7,9 +7,23 @@
 @layer base {
   :root {
     color-scheme: light;
-    --bg-wash: radial-gradient(circle at top left, rgba(255, 179, 176, 0.35), transparent 32%),
-      radial-gradient(circle at 85% 15%, rgba(167, 55, 59, 0.07), transparent 24%),
-      linear-gradient(180deg, #fbf9f4 0%, #f5f3ee 38%, #fbf9f4 100%);
+    --color-white: theme('colors.ink.50');
+    --color-sand-50: theme('colors.sand.50');
+    --color-sand-100: theme('colors.sand.100');
+    --color-primary-50: theme('colors.primary.50');
+    --color-primary-100: theme('colors.primary.100');
+    --color-primary-400: theme('colors.primary.400');
+    --color-primary-600: theme('colors.primary.600');
+    --color-primary-700: theme('colors.primary.700');
+    --color-primary-800: theme('colors.primary.800');
+    --rgb-white: 255, 255, 255;
+    --rgb-sand-100: 245, 243, 238;
+    --rgb-primary-50: 193, 236, 212;
+    --rgb-primary-100: 165, 208, 185;
+    --rgb-primary-700: 1, 45, 29;
+    --bg-wash: radial-gradient(circle at top left, rgba(var(--rgb-primary-50), 0.45), transparent 32%),
+      radial-gradient(circle at 85% 15%, rgba(var(--rgb-primary-700), 0.07), transparent 24%),
+      linear-gradient(180deg, var(--color-sand-50) 0%, var(--color-sand-100) 38%, var(--color-sand-50) 100%);
   }
 
   html {
@@ -24,18 +38,18 @@
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(167, 55, 59, 0.30) transparent;
+    scrollbar-color: rgba(var(--rgb-primary-700), 0.30) transparent;
   }
 
   ::selection {
-    background: rgba(255, 179, 176, 0.40);
+    background: rgba(var(--rgb-primary-100), 0.40);
   }
 
   input,
   textarea,
   select {
     @apply bg-white/80 border border-primary-100 rounded-xl text-ink-900 placeholder:text-ink-300;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 1px 0 rgba(var(--rgb-white), 0.7);
   }
 
   input:focus,
@@ -52,12 +66,12 @@
 @layer components {
   .btn-sm {
     @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-white text-sm font-medium disabled:opacity-60 transition-all duration-200 shadow-soft;
-    background: linear-gradient(135deg, #74101a 0%, #a7373b 100%);
+    background: linear-gradient(135deg, var(--color-primary-700) 0%, var(--color-primary-600) 100%);
   }
 
   .btn-sm:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 18px 30px rgba(167, 55, 59, 0.22);
+    box-shadow: 0 18px 30px rgba(var(--rgb-primary-700), 0.18);
   }
 
   .btn-secondary {
@@ -66,7 +80,7 @@
 
   .btn-secondary:hover:not(:disabled) {
     @apply bg-white text-primary-700;
-    box-shadow: 0 12px 24px rgba(167, 55, 59, 0.08);
+    box-shadow: 0 12px 24px rgba(var(--rgb-primary-700), 0.08);
   }
 
   .app-shell {
@@ -75,12 +89,12 @@
 
   .app-frame {
     @apply max-w-7xl mx-auto rounded-[28px] overflow-hidden border border-white/70 shadow-shell backdrop-blur;
-    background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,243,243,0.96) 100%);
+    background: linear-gradient(180deg, rgba(var(--rgb-white), 0.88) 0%, rgba(var(--rgb-sand-100), 0.96) 100%);
   }
 
   .topbar {
     @apply px-5 py-5 md:px-8 md:py-6 text-white flex items-start justify-between gap-4;
-    background: linear-gradient(135deg, #410007 0%, #74101a 45%, #a7373b 100%);
+    background: linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-700) 45%, var(--color-primary-600) 100%);
   }
 
   .topbar-title {
@@ -105,7 +119,7 @@
 
   .tab-pill-active {
     @apply text-white border-transparent shadow-soft;
-    background: linear-gradient(135deg, #74101a 0%, #a7373b 100%);
+    background: linear-gradient(135deg, var(--color-primary-700) 0%, var(--color-primary-400) 100%);
   }
 
   .tab-pill-idle {
@@ -134,7 +148,7 @@
 
   .stat-card {
     @apply surface-card p-4 md:p-5;
-    background-image: linear-gradient(160deg, rgba(255,255,255,0.90), rgba(255,241,241,0.85));
+    background-image: linear-gradient(160deg, rgba(var(--rgb-white), 0.90), rgba(var(--rgb-primary-50), 0.85));
   }
 
   .info-card {
@@ -143,7 +157,7 @@
 
   .logout-fab {
     @apply fixed top-5 right-5 z-50 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-xs font-medium text-ink-700 backdrop-blur transition-all duration-200;
-    box-shadow: 0 14px 36px rgba(33, 23, 13, 0.1);
+    box-shadow: 0 14px 36px rgba(var(--rgb-primary-700), 0.10);
   }
 
   .logout-fab:hover {
@@ -164,5 +178,173 @@
 
   .hero-panel {
     @apply rounded-[24px] border border-white/15 bg-white/10 p-4 md:p-5 backdrop-blur-sm;
+  }
+
+  .anubhav-page {
+    @apply max-w-5xl mx-auto space-y-4 md:space-y-5;
+  }
+
+  .anubhav-header {
+    @apply text-center pt-1;
+  }
+
+  .anubhav-title {
+    @apply font-display text-3xl leading-tight text-ink-900;
+  }
+
+  .anubhav-subtitle {
+    @apply text-sm md:text-base text-ink-500 max-w-xl mx-auto mt-1;
+  }
+
+  .anubhav-composer {
+    @apply rounded-2xl border border-ink-300/60 bg-white p-4 md:p-5 shadow-soft;
+  }
+
+  .anubhav-composer-head {
+    @apply flex items-start gap-3;
+  }
+
+  .anubhav-avatar {
+    @apply w-10 h-10 rounded-full bg-primary-100 text-primary-800 text-sm font-semibold flex items-center justify-center shrink-0;
+  }
+
+  .anubhav-composer-copy {
+    @apply min-w-0;
+  }
+
+  .anubhav-composer-prompt {
+    @apply text-lg md:text-xl text-ink-900 font-medium;
+  }
+
+  .anubhav-composer-note {
+    @apply text-xs md:text-sm text-ink-400 mt-0.5;
+  }
+
+  .anubhav-form {
+    @apply mt-3 space-y-3;
+  }
+
+  .anubhav-input {
+    @apply w-full rounded-xl border border-ink-300/80 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400;
+  }
+
+  .anubhav-input:focus {
+    @apply outline-none ring-2 ring-primary-100 border-primary-500;
+  }
+
+  .anubhav-textarea {
+    @apply min-h-[104px] resize-y;
+  }
+
+  .anubhav-form-actions {
+    @apply pt-2 border-t border-ink-200 flex items-center justify-between gap-3;
+  }
+
+  .anubhav-meta-actions {
+    @apply text-sm text-ink-500 flex items-center gap-4;
+  }
+
+  .anubhav-post-btn {
+    @apply inline-flex items-center justify-center rounded-full bg-primary-700 text-white text-sm font-semibold px-4 py-2 leading-none transition-colors;
+  }
+
+  .anubhav-post-btn:hover:not(:disabled) {
+    @apply bg-primary-800;
+  }
+
+  .anubhav-post-btn:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+
+  .anubhav-ghost-btn {
+    @apply inline-flex items-center justify-center rounded-full border border-ink-300 bg-white text-ink-700 text-sm font-medium px-4 py-2;
+  }
+
+  .anubhav-filters {
+    @apply flex items-center gap-2 overflow-x-auto pb-1;
+  }
+
+  .anubhav-chip {
+    @apply rounded-full px-4 py-1.5 text-sm whitespace-nowrap bg-ink-100 text-ink-500 border border-transparent transition-colors;
+  }
+
+  .anubhav-chip.is-active {
+    @apply bg-primary-700 text-white;
+  }
+
+  .anubhav-feed {
+    @apply grid gap-4 md:gap-5;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .anubhav-card {
+    @apply rounded-2xl border border-ink-300/70 bg-white p-4 md:p-5 shadow-soft;
+  }
+
+  .anubhav-card-head {
+    @apply flex items-start justify-between gap-2;
+  }
+
+  .anubhav-author-wrap {
+    @apply flex items-center gap-2.5 min-w-0;
+  }
+
+  .anubhav-avatar.tone-village {
+    @apply bg-primary-100 text-primary-700;
+  }
+
+  .anubhav-author {
+    @apply text-sm font-semibold text-ink-900 truncate;
+  }
+
+  .anubhav-meta {
+    @apply text-xs text-ink-500;
+  }
+
+  .anubhav-card-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .anubhav-link-btn {
+    @apply text-xs font-medium text-primary-700 hover:underline;
+  }
+
+  .anubhav-link-btn.danger {
+    @apply text-accent-600;
+  }
+
+  .anubhav-story-title {
+    @apply font-display text-3xl leading-tight mt-3 text-ink-900;
+  }
+
+  .anubhav-story-body {
+    @apply text-base text-ink-500 mt-1.5 whitespace-pre-wrap;
+  }
+
+  .anubhav-readmore {
+    @apply mt-2 text-sm font-semibold text-primary-700 hover:underline;
+  }
+
+  .anubhav-story-visual {
+    @apply mt-3 rounded-none md:rounded-xl border border-ink-200 min-h-[170px] md:min-h-[210px] overflow-hidden relative;
+    background: linear-gradient(140deg, theme('colors.primary.800') 0%, theme('colors.primary.700') 35%, theme('colors.primary.500') 100%);
+  }
+
+  .anubhav-visual-badge {
+    @apply absolute right-2 bottom-2 text-xs font-medium bg-white/90 text-ink-700 rounded-full px-2 py-1;
+  }
+
+  .anubhav-empty {
+    @apply rounded-2xl border border-dashed border-ink-300 bg-white/70 text-ink-500 text-sm py-8 text-center;
+  }
+
+  @screen lg {
+    .anubhav-feed {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .anubhav-composer {
+      @apply p-6;
+    }
   }
 }

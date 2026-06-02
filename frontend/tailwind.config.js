@@ -8,20 +8,8 @@ export default {
         display: ['"Source Serif 4"', 'ui-serif', 'Georgia', 'serif'],
       },
       colors: {
-        // Primary: Terracotta
+        // Primary: Forest Green
         primary: {
-          50:  "#ffdad8",
-          100: "#ffb3b0",
-          200: "#ff7a7a",
-          300: "#e05555",
-          400: "#c43333",
-          500: "#a7373b",
-          600: "#861f25",
-          700: "#74101a",
-          800: "#410007",
-        },
-        // Secondary: Forest Green accent
-        accent: {
           50:  "#c1ecd4",
           100: "#a5d0b9",
           200: "#86af99",
@@ -32,6 +20,18 @@ export default {
           700: "#012d1d",
           800: "#002114",
           900: "#00150d",
+        },
+        // Secondary: Terracotta accent
+        accent: {
+          50:  "#ffdad8",
+          100: "#ffb3b0",
+          200: "#ff7a7a",
+          300: "#e05555",
+          400: "#c43333",
+          500: "#a7373b",
+          600: "#861f25",
+          700: "#74101a",
+          800: "#410007",
         },
         // Neutral ink scale
         ink: {
@@ -62,8 +62,8 @@ export default {
         },
       },
       boxShadow: {
-        shell: "0 24px 80px rgba(167, 55, 59, 0.10)",
-        soft:  "0 4px 12px rgba(167, 55, 59, 0.06)",
+        shell: "0 24px 80px rgba(1, 45, 29, 0.10)",
+        soft:  "0 4px 12px rgba(1, 45, 29, 0.06)",
       },
       borderRadius: {
         sm:  "0.25rem",
