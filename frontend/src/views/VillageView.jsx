@@ -150,18 +150,20 @@ export function VillageView({ previewToken } = {}) {
           </div>
           {me && (
             <div className="flex-1">
-              <p className="topbar-subtitle">{me.name} • {me.district}, {me.taluka}</p>
-              {(me.village_lead_name || me.fcra_number || me.ngo_name) && (
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-primary-50/75">
-                  {me.village_lead_name && <span><span className="text-primary-50/50">Lead</span> {me.village_lead_name}{me.village_lead_phone ? ` · ${me.village_lead_phone}` : ""}</span>}
-                  {(me.fcra_number || me.ngo_name) && (
-                    <span>
-                      <span className="text-primary-50/50">FCRA</span> {me.fcra_number || me.ngo_name}
-                      {me.fcra_expiry_date ? ` · Expires ${me.fcra_expiry_date}` : ""}
-                    </span>
-                  )}
-                </div>
-              )}
+              <p className="topbar-subtitle">{me.name}</p>
+              <div className="mt-2 space-y-1 text-xs text-primary-50/75">
+                <p>
+                  <span className="text-primary-50/50">Village Lead Contact</span> {me.village_lead_phone || "-"}
+                </p>
+                <p>
+                  <span className="text-primary-50/50">NGO</span> {me.ngo_name || "-"}
+                  <span className="text-primary-50/50"> · FCRA</span> {me.fcra_number || "-"}
+                </p>
+                <p>
+                  <span className="text-primary-50/50">NGO Lead</span> {me.ngo_contact_name || "-"}
+                  <span className="text-primary-50/50"> · Contact</span> {me.ngo_contact_phone || "-"}
+                </p>
+              </div>
             </div>
           )}
         </div>
