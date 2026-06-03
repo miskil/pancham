@@ -1,7 +1,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from ..db import get_db
 from ..models.funding import FundingRound
 from ..models.village import Village
 from ..models.village_user import VillageUser
+from ..utils.numbers import parse_locale_float
 
 router = APIRouter(tags=["funding"])
 admin_only = require_role("ADMIN")
@@ -22,6 +23,11 @@ class FundingRoundCreateIn(BaseModel):
     admin_funding_note: str | None = None
     village_funding_note: str | None = None
 
+    @field_validator("funding_amount", mode="before")
+    @classmethod
+    def normalize_funding_amount(cls, value):
+        return parse_locale_float(value)
+
 
 class FundingRoundUpdateIn(BaseModel):
     funding_amount: float | None = None
@@ -30,6 +36,11 @@ class FundingRoundUpdateIn(BaseModel):
     admin_funding_note: str | None = None
     village_funding_note: str | None = None
     funding_received_message: str | None = None
+
+    @field_validator("funding_amount", mode="before")
+    @classmethod
+    def normalize_funding_amount(cls, value):
+        return parse_locale_float(value)
 
 
 class FundingRoundOut(BaseModel):

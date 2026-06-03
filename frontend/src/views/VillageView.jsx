@@ -626,8 +626,8 @@ function ProposalTab({ me, onUpdate, api }) {
         <label className="block text-xs font-medium text-gray-600 mb-1">गावाच दर डोई उत्पन्न (रु.)</label>
         {canEdit ? (
           <input
-            type="number"
-            min="0"
+            type="text"
+            inputMode="numeric"
             className="w-full border rounded px-3 py-2 text-sm"
             placeholder="उदा. 4500"
             value={form.per_capita_income}

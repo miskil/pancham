@@ -11,12 +11,13 @@ import {
   sumPlanAmount,
   withPlanMeta,
 } from "./planData";
+import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
 
 function formatDisplayAmount(amount, currency, rate) {
   if (amount == null || amount === "") return null;
-  const value = parseFloat(amount) || 0;
-  if (currency === "USD") return (value / rate).toFixed(2);
-  return Number(value).toLocaleString("en-IN");
+  const value = parseLocaleNumber(amount) || 0;
+  if (currency === "USD") return formatEnglishNumber(value / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatEnglishNumber(value);
 }
 
 function formatCurrency(amount, currency, rate) {
@@ -37,12 +38,12 @@ function MilestoneCard({
   onAddActivity,
   onRemoveActivity,
 }) {
-  const milestoneTotal = (milestone.activities || []).reduce((sum, activity) => sum + (parseFloat(activity.amount) || 0), 0);
+  const milestoneTotal = (milestone.activities || []).reduce((sum, activity) => sum + (parseLocaleNumber(activity.amount) || 0), 0);
 
   const activities = milestone.activities || [];
   const filledActivities = activities.filter((a) => a.pct_complete !== "" && a.pct_complete != null);
   const milestonePct = filledActivities.length > 0
-    ? Math.round(filledActivities.reduce((sum, a) => sum + (parseFloat(a.pct_complete) || 0), 0) / filledActivities.length)
+    ? Math.round(filledActivities.reduce((sum, a) => sum + (parseLocaleNumber(a.pct_complete) || 0), 0) / filledActivities.length)
     : null;
 
   function toggleCategory(code) {
@@ -97,7 +98,9 @@ function MilestoneCard({
             </span>
           )}
           <span className="rounded-full bg-sand-100 px-3 py-1 text-xs font-semibold text-ink-700">
-            {currency === "INR" ? "₹" : "$"}{currency === "INR" ? milestoneTotal.toLocaleString("en-IN") : (milestoneTotal / rate).toFixed(2)}
+            {currency === "INR" ? "₹" : "$"}{currency === "INR"
+              ? formatEnglishNumber(milestoneTotal)
+              : formatEnglishNumber(milestoneTotal / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           {!readonly && onRemove && (
             <button onClick={onRemove} title={labels.removeMilestoneTitle} className="ml-1 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none">
@@ -176,13 +179,14 @@ function MilestoneCard({
                         placeholder="POC"
                       />
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
                         value={currency === "USD"
                           ? (activity.amount != null ? (activity.amount / rate).toFixed(2) : "")
                           : (activity.amount ?? "")}
                         onChange={(e) => {
-                          const value = e.target.value ? parseFloat(e.target.value) : null;
+                          const value = parseLocaleNumber(e.target.value);
                           onChange({
                             ...milestone,
                             activities: milestone.activities.map((item, idx) => idx === activityIndex
@@ -211,14 +215,15 @@ function MilestoneCard({
                       placeholder="End date"
                     />
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       min="0"
                       max="100"
                       className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
                       value={activity.pct_complete ?? ""}
                       onChange={(e) => onChange({
                         ...milestone,
-                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, pct_complete: e.target.value } : item),
+                        activities: milestone.activities.map((item, idx) => idx === activityIndex ? { ...item, pct_complete: parseLocaleNumber(e.target.value) ?? "" } : item),
                       })}
                       placeholder="% complete"
                     />
@@ -245,7 +250,7 @@ function MilestoneCard({
 function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, onChange }) {
   const data = rows && rows.length > 0 ? rows : [createEmptyMilestone()];
   const yearTotal = data.reduce((sum, milestone) => {
-    return sum + (milestone.activities || []).reduce((activitySum, activity) => activitySum + (parseFloat(activity.amount) || 0), 0);
+    return sum + (milestone.activities || []).reduce((activitySum, activity) => activitySum + (parseLocaleNumber(activity.amount) || 0), 0);
   }, 0);
 
   function updateMilestone(index, nextMilestone) {
@@ -283,7 +288,9 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, o
         <h3 className="text-sm font-semibold text-ink-700">Year {year}</h3>
         <div className="flex items-center gap-2 text-xs text-ink-500">
           <span>Total:</span>
-          <span className="font-semibold text-ink-800">{currency === "INR" ? "₹" : "$"}{currency === "INR" ? yearTotal.toLocaleString("en-IN") : (yearTotal / rate).toFixed(2)}</span>
+          <span className="font-semibold text-ink-800">{currency === "INR" ? "₹" : "$"}{currency === "INR"
+            ? formatEnglishNumber(yearTotal)
+            : formatEnglishNumber(yearTotal / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           {grandTotal > 0 && <span>({((yearTotal / grandTotal) * 100).toFixed(1)}%)</span>}
         </div>
       </div>
@@ -386,8 +393,8 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }
   const grandTotalINR = sumPlanAmount(normalizedPlan);
   const symbol = currency === "INR" ? "₹" : "$";
   const grandTotalDisplay = currency === "INR"
-    ? grandTotalINR.toLocaleString("en-IN")
-    : (grandTotalINR / rate).toFixed(2);
+    ? formatEnglishNumber(grandTotalINR)
+    : formatEnglishNumber(grandTotalINR / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   function handleYearChange(year, rows) {
     emitPlanWithMeta({ ...normalizedPlan, [String(year)]: rows }, { currency, rate });
@@ -420,10 +427,10 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }
             <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
               $1 = ₹
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="decimal"
                 value={rate}
-                onChange={(e) => handleRateChange(parseFloat(e.target.value) || 1)}
+                onChange={(e) => handleRateChange(parseLocaleNumber(e.target.value) || 1)}
                 className="w-20 border border-primary-100 rounded-xl px-2 py-1 text-right text-ink-700 bg-white"
               />
               <button

@@ -6,6 +6,7 @@ import { Thread } from "../components/Thread";
 import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
+import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
 import { VillageView } from "./VillageView";
 
 const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
@@ -1224,7 +1225,7 @@ function FundingTab() {
 
   function formatAmountForDisplay(amount) {
     if (amount === "" || amount == null) return "";
-    const value = Number(amount);
+    const value = parseLocaleNumber(amount);
     if (!Number.isFinite(value)) return amount; // pass through mid-entry strings as-is
     const display = currency === "USD" ? value / rate : value;
     // Show up to 2 decimal places but strip trailing zeros so 84000 shows as "84000" not "84000.00"
@@ -1233,7 +1234,7 @@ function FundingTab() {
 
   function parseDisplayAmount(inputValue) {
     if (inputValue === "" || inputValue == null) return "";
-    const value = Number(inputValue);
+    const value = parseLocaleNumber(inputValue);
     if (!Number.isFinite(value)) return "";
     if (currency === "USD") return String(Math.round(value * rate * 100) / 100);
     return String(value);
@@ -1247,7 +1248,7 @@ function FundingTab() {
     try {
       const updated = await api.updateVillageFundingRound(villageId, roundId, {
         funding_sent_date: current.funding_sent_date || null,
-        funding_amount: current.funding_amount === "" ? null : Number(current.funding_amount),
+        funding_amount: current.funding_amount === "" ? null : parseLocaleNumber(current.funding_amount),
         admin_funding_note: current.admin_funding_note,
         village_funding_note: current.village_funding_note,
         funding_received_message: current.funding_received_message,
@@ -1270,10 +1271,10 @@ function FundingTab() {
     }
   }
 
-  const totalFunding = rounds.reduce((sum, item) => sum + (Number(item.funding_amount) || 0), 0);
+  const totalFunding = rounds.reduce((sum, item) => sum + (parseLocaleNumber(item.funding_amount) || 0), 0);
   const totalFundingDisplay = currency === "USD"
-    ? (totalFunding / rate).toFixed(2)
-    : totalFunding.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+    ? formatEnglishNumber(totalFunding / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : formatEnglishNumber(totalFunding, { maximumFractionDigits: 2 });
 
   return (
     <div className="space-y-4">
@@ -1315,11 +1316,10 @@ function FundingTab() {
               <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
                 $1 = ₹
                 <input
-                  type="number"
-                  min="1"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={rate}
-                  onChange={(e) => setRate(parseFloat(e.target.value) || 1)}
+                  onChange={(e) => setRate(parseLocaleNumber(e.target.value) || 1)}
                   className="w-24 border rounded px-2 py-1 text-right"
                 />
                 <button
