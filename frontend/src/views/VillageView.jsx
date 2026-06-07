@@ -20,6 +20,7 @@ const STRINGS = {
     planLabels: { milestone: "महत्वाचा टप्पा", impact: "परिणाम", activity: "कार्य", addActivity: "+ कार्य जोडा", addMilestone: "+ महत्वाचा टप्पा जोडा" },
     villageProposal: "गावाचा प्रस्ताव",
     villageInfo: "गावाची माहिती",
+    ngoInfo: "एनजीओ माहिती",
     name: "नाव",
     district: "जिल्हा",
     taluka: "तालुका",
@@ -46,6 +47,7 @@ const STRINGS = {
     planLabels: { milestone: "Milestone", impact: "Impact", activity: "Activity", addActivity: "+ Add Activity", addMilestone: "+ Add Milestone" },
     villageProposal: "Village Proposal",
     villageInfo: "Village Information",
+    ngoInfo: "NGO Information",
     name: "Name",
     district: "District",
     taluka: "Taluka",
@@ -583,7 +585,16 @@ function ProposalTab({ me, onUpdate, api }) {
               <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
-          <div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">{s.ngoInfo}</h3>
+          {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">{s.ngo}</label>
             {canEdit ? (
               <input
@@ -608,6 +619,19 @@ function ProposalTab({ me, onUpdate, api }) {
             )}
           </div>
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.fcraExpiry}</label>
+            {canEdit ? (
+              <input
+                type="date"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.fcra_expiry_date}
+                onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">{s.ngoLead}</label>
             {canEdit ? (
               <input
@@ -629,19 +653,6 @@ function ProposalTab({ me, onUpdate, api }) {
               />
             ) : (
               <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.fcraExpiry}</label>
-            {canEdit ? (
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.fcra_expiry_date}
-                onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
         </div>
