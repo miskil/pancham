@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, createContext, useContext } from "react";
 import * as baseApi from "../api/village";
 import { apiFetch, postForm } from "../api/client";
 import { VillageStageTracker } from "../components/VillageStageTracker";
@@ -10,22 +10,63 @@ import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
-const TAB_LABELS = {
-  Dashboard: "डॅशबोर्ड",
-  Proposal: "प्रस्ताव",
-  Evidence: "पुरावा",
-  Org: "संघटन",
-  Plan: "योजना",
-  Funding: "निधी",
-  Status: "प्रगती",
-  Anubhav: "अनुभव",
-};
-const VILLAGE_PLAN_LABELS = {
-  milestone: "महत्वाचा टप्पा",
-  impact: "परिणाम",
-  activity: "कार्य",
-  addActivity: "+ कार्य जोडा",
-  addMilestone: "+ महत्वाचा टप्पा जोडा",
+
+const LangContext = createContext("mr");
+const useLang = () => useContext(LangContext);
+
+const STRINGS = {
+  mr: {
+    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
+    planLabels: { milestone: "महत्वाचा टप्पा", impact: "परिणाम", activity: "कार्य", addActivity: "+ कार्य जोडा", addMilestone: "+ महत्वाचा टप्पा जोडा" },
+    villageProposal: "गावाचा प्रस्ताव",
+    villageInfo: "गावाची माहिती",
+    name: "नाव",
+    district: "जिल्हा",
+    taluka: "तालुका",
+    villageLead: "गाव समन्वयक",
+    villageLeadPhone: "गाव समन्वयक फोन (whatsapp)",
+    ngo: "एनजीओ",
+    fcraNumber: "एफसीआरए क्रमांक",
+    ngoLead: "एनजीओ समन्वयक",
+    ngoLeadPhone: "एनजीओ समन्वयक फोन (whatsapp)",
+    fcraExpiry: "एफसीआरए संपण्याची तारीख",
+    perCapitaIncome: "दर डोई उत्पन्न (रु.)",
+    villageDescription: "भौगोलिक आणि सामाजिक माहिती",
+    villageNeeds: "गावाची गरज",
+    keyActivities: "गावासाठी काय करता येईल",
+    focusAreas: "फोकस क्षेत्रे",
+    postUpdate: "अपडेट पोस्ट करा",
+    whatsHappening: "गावात काय चाललंय…",
+    attachMedia: "छायाचित्र किंवा व्हिडिओ जोडा",
+    notFilledIn: "भरलेले नाही",
+    readOnly: "फक्त वाचा",
+  },
+  en: {
+    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
+    planLabels: { milestone: "Milestone", impact: "Impact", activity: "Activity", addActivity: "+ Add Activity", addMilestone: "+ Add Milestone" },
+    villageProposal: "Village Proposal",
+    villageInfo: "Village Information",
+    name: "Name",
+    district: "District",
+    taluka: "Taluka",
+    villageLead: "Village Lead",
+    villageLeadPhone: "Village Lead Phone (WhatsApp)",
+    ngo: "NGO",
+    fcraNumber: "FCRA Number",
+    ngoLead: "NGO Lead",
+    ngoLeadPhone: "NGO Lead Phone (WhatsApp)",
+    fcraExpiry: "FCRA Expiry Date",
+    perCapitaIncome: "Per Capita Income (Rs.)",
+    villageDescription: "Geographic & Social Description",
+    villageNeeds: "Village Needs / Community Context",
+    keyActivities: "Key Activities Planned",
+    focusAreas: "Focus Areas",
+    postUpdate: "Post Update",
+    whatsHappening: "What's happening in the village…",
+    attachMedia: "Attach image or video",
+    notFilledIn: "Not filled in",
+    readOnly: "Read only",
+  },
 };
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -141,12 +182,23 @@ export function VillageView({ previewToken } = {}) {
   const api = useMemo(() => makeApi(previewToken), [previewToken]);
   const [tab, setTab] = useState("Dashboard");
   const [me, setMe] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem("pancham_lang") || "mr");
+
+  function toggleLang() {
+    setLang((prev) => {
+      const next = prev === "mr" ? "en" : "mr";
+      localStorage.setItem("pancham_lang", next);
+      return next;
+    });
+  }
 
   useEffect(() => { api.getMe().then(setMe).catch(() => {}); }, [api]);
 
   const proposalAccepted = me && !["CREATED", "PROPOSAL_SUBMITTED", "UNDER_REVIEW", "AMENDMENT_REQUESTED", "AMENDED"].includes(me.internal_status);
+  const s = STRINGS[lang];
 
   return (
+    <LangContext.Provider value={lang}>
     <div className="app-shell">
       <div className="app-frame">
       <header className="topbar">
@@ -172,6 +224,13 @@ export function VillageView({ previewToken } = {}) {
               </div>
             </div>
           )}
+          <button
+            onClick={toggleLang}
+            className="shrink-0 self-start mt-1 rounded-full border border-primary-50/40 px-3 py-1 text-xs font-medium text-primary-50/80 hover:bg-primary-700 transition-colors"
+            title="Switch language / भाषा बदला"
+          >
+            {lang === "mr" ? "English" : "मराठी"}
+          </button>
         </div>
       </header>
 
@@ -192,7 +251,7 @@ export function VillageView({ previewToken } = {}) {
                 ${locked ? "opacity-40 cursor-not-allowed" : ""}
               `}
             >
-              {TAB_LABELS[t] || t} {locked && "🔒"}
+              {s.tabs[t] || t} {locked && "🔒"}
             </button>
           );
         })}
@@ -210,6 +269,7 @@ export function VillageView({ previewToken } = {}) {
       </div>
       </div>
     </div>
+    </LangContext.Provider>
   );
 }
 
@@ -325,6 +385,8 @@ function StatCard({ label, value, note }) {
 }
 
 function ProposalTab({ me, onUpdate, api }) {
+  const lang = useLang();
+  const s = STRINGS[lang];
   const [proposal, setProposal] = useState(null);
   const [form, setForm] = useState({
     district: "",
@@ -451,7 +513,7 @@ function ProposalTab({ me, onUpdate, api }) {
   return (
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-700">गावाचा प्रस्ताव</h2>
+        <h2 className="font-semibold text-gray-700">{s.villageProposal}</h2>
         <div className="flex items-center gap-2">
           {proposal && <ExportDocxButton onExport={() => api.exportProposal(proposal.id)} />}
           {proposal && (
@@ -465,16 +527,16 @@ function ProposalTab({ me, onUpdate, api }) {
 
       <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">गावाची माहिती</h3>
-          {!canEdit && <span className="text-xs text-gray-400">Read only</span>}
+          <h3 className="text-sm font-semibold text-gray-700">{s.villageInfo}</h3>
+          {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">नाव</label>
-            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.name}</label>
+            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">जिल्हा</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.district}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -482,11 +544,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.district || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.district || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">तालुका</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.taluka}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -494,11 +556,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, taluka: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.taluka || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.taluka || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">गाव समन्वयक</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLead}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -506,11 +568,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">गाव समन्वयक फोन(whatsapp)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLeadPhone}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -518,11 +580,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.ngo}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -530,11 +592,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, ngo_name: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">ए़फसीआरए क्रमांक</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.fcraNumber}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -542,11 +604,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, fcra_number: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_number || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_number || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ समन्वयक</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.ngoLead}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -554,11 +616,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, ngo_contact_name: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_name || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">एनजीओ समन्वयक फोन(whatsapp)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.ngoLeadPhone}</label>
             {canEdit ? (
               <input
                 className="w-full border rounded px-3 py-2 text-sm"
@@ -566,11 +628,11 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, ngo_contact_phone: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">ए़फसीआरए संपण्याची तारीख</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.fcraExpiry}</label>
             {canEdit ? (
               <input
                 type="date"
@@ -579,7 +641,7 @@ function ProposalTab({ me, onUpdate, api }) {
                 onChange={(e) => setForm((p) => ({ ...p, fcra_expiry_date: e.target.value }))}
               />
             ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">Not filled in</span>}</p>
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.fcra_expiry_date || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
         </div>
@@ -593,7 +655,7 @@ function ProposalTab({ me, onUpdate, api }) {
       {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Focus Areas</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{s.focusAreas}</label>
         {canEdit ? (
           <div className="flex flex-wrap gap-1.5">
             {PLAN_CATEGORY_OPTIONS.map((item) => {
@@ -617,31 +679,31 @@ function ProposalTab({ me, onUpdate, api }) {
           </div>
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-            {(form.focus_areas || []).length > 0 ? (form.focus_areas || []).join(", ") : <span className="text-gray-400 italic">Not filled in</span>}
+            {(form.focus_areas || []).length > 0 ? (form.focus_areas || []).join(", ") : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">गावाच दर डोई उत्पन्न (रु.)</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{s.perCapitaIncome}</label>
         {canEdit ? (
           <input
             type="text"
             inputMode="numeric"
             className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="उदा. 4500"
+            placeholder={lang === "mr" ? "उदा. 4500" : "e.g. 4500"}
             value={form.per_capita_income}
             onChange={(e) => setForm((p) => ({ ...p, per_capita_income: e.target.value }))}
           />
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-            {form.per_capita_income ? `Rs ${form.per_capita_income}` : <span className="text-gray-400 italic">Not filled in</span>}
+            {form.per_capita_income ? `Rs ${form.per_capita_income}` : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">गावाची भौगोलीक आणि सामाजीक माहिती</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageDescription}</label>
         {canEdit ? (
           <textarea
             className="w-full border rounded px-3 py-2 text-sm h-24"
@@ -650,13 +712,13 @@ function ProposalTab({ me, onUpdate, api }) {
           />
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
-            {form.description || <span className="text-gray-400 italic">Not filled in</span>}
+            {form.description || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">गावाची गरज</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageNeeds}</label>
         {canEdit ? (
           <textarea
             className="w-full border rounded px-3 py-2 text-sm h-24"
@@ -665,13 +727,13 @@ function ProposalTab({ me, onUpdate, api }) {
           />
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
-            {form.community_context || <span className="text-gray-400 italic">Not filled in</span>}
+            {form.community_context || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">गावा साठी काय करता येईल</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{s.keyActivities}</label>
         {canEdit ? (
           <textarea
             className="w-full border rounded px-3 py-2 text-sm h-24"
@@ -680,7 +742,7 @@ function ProposalTab({ me, onUpdate, api }) {
           />
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
-            {form.key_activities || <span className="text-gray-400 italic">Not filled in</span>}
+            {form.key_activities || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
@@ -1179,6 +1241,8 @@ function VillageOrgReadOnly({ village }) {
 }
 
 function ProjectTab({ me, api }) {
+  const lang = useLang();
+  const planLabels = STRINGS[lang].planLabels;
   const [baseline, setBaseline] = useState(null);
   const [wip, setWip] = useState(null);
   const [draftData, setDraftData] = useState(null);
@@ -1265,7 +1329,7 @@ function ProjectTab({ me, api }) {
         <PlanMilestonesViewer
           plan={{ plan_data: draftData }}
           readonly={false}
-          labels={VILLAGE_PLAN_LABELS}
+          labels={planLabels}
           onChange={setDraftData}
         />
       </div>
@@ -1336,7 +1400,7 @@ function ProjectTab({ me, api }) {
           <PlanMilestonesViewer
             plan={{ ...baseline, plan_data: baselineDataForView }}
             readonly={!baselineEditable}
-            labels={VILLAGE_PLAN_LABELS}
+            labels={planLabels}
             onChange={baselineEditable ? setDraftData : undefined}
           />
         </div>
@@ -1356,7 +1420,7 @@ function ProjectTab({ me, api }) {
             <PlanMilestonesViewer
               plan={{ plan_data: currentWipData }}
               readonly={false}
-              labels={VILLAGE_PLAN_LABELS}
+              labels={planLabels}
               onChange={setDraftData}
             />
           ) : (
@@ -1369,6 +1433,8 @@ function ProjectTab({ me, api }) {
 }
 
 function StatusTab({ me, api }) {
+  const lang = useLang();
+  const s = STRINGS[lang];
   const [updates, setUpdates] = useState([]);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
@@ -1404,19 +1470,19 @@ function StatusTab({ me, api }) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border p-4">
-        <h2 className="font-semibold text-gray-700 mb-3">Post Update</h2>
+        <h2 className="font-semibold text-gray-700 mb-3">{s.postUpdate}</h2>
         <textarea
           className="w-full border rounded px-3 py-2 text-sm h-24 mb-2"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="What's happening in the village…"
+          placeholder={s.whatsHappening}
         />
         <div className="flex items-center gap-3">
           <label className="cursor-pointer flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-600">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 00-5.656-5.656L5.757 10.757a6 6 0 108.486 8.486L20 13" />
             </svg>
-            {file ? file.name : "Attach image or video"}
+            {file ? file.name : s.attachMedia}
             <input
               type="file"
               accept="image/*,video/*"
