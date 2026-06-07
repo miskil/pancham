@@ -1,15 +1,15 @@
 """add bank_account_number and ifsc_code to villages
 
-Revision ID: a1b2c3d4e5f6
-Revises: f6a7b8c9d0e1
+Revision ID: g2h3i4j5k6l7
+Revises: f1a2b3c4d5e6
 Create Date: 2026-06-07
 
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = "a1b2c3d4e5f6"
-down_revision = "f6a7b8c9d0e1"
+revision = "g2h3i4j5k6l7"
+down_revision = "f1a2b3c4d5e6"
 branch_labels = None
 depends_on = None
 
