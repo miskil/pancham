@@ -32,6 +32,8 @@ class OrgProfileIn(BaseModel):
     village_lead_name: str | None = None
     village_lead_phone: str | None = None
     ngo_whatsapp_phone: str | None = None
+    bank_account_number: str | None = None
+    ifsc_code: str | None = None
     vdc_members: list[VdcMember] | None = None
 
 
@@ -47,6 +49,8 @@ class OrgProfileOut(BaseModel):
     village_lead_name: str | None = None
     village_lead_phone: str | None = None
     ngo_whatsapp_phone: str | None = None
+    bank_account_number: str | None = None
+    ifsc_code: str | None = None
     vdc_members: list[VdcMember]
 
 
@@ -84,6 +88,8 @@ def _serialize_org(village: Village) -> OrgProfileOut:
         village_lead_name=village.village_lead_name,
         village_lead_phone=village.village_lead_phone,
         ngo_whatsapp_phone=village.ngo_whatsapp_phone,
+        bank_account_number=village.bank_account_number,
+        ifsc_code=village.ifsc_code,
         vdc_members=members,
     )
 
@@ -175,6 +181,10 @@ async def update_village_org(
         village.village_lead_phone = body.village_lead_phone.strip() or None
     if body.ngo_whatsapp_phone is not None:
         village.ngo_whatsapp_phone = body.ngo_whatsapp_phone.strip() or None
+    if body.bank_account_number is not None:
+        village.bank_account_number = body.bank_account_number.strip() or None
+    if body.ifsc_code is not None:
+        village.ifsc_code = body.ifsc_code.strip().upper() or None
     if body.vdc_members is not None:
         village.vdc_members = [
             {
@@ -238,6 +248,10 @@ async def update_admin_village_org(
         village.village_lead_phone = body.village_lead_phone.strip() or None
     if body.ngo_whatsapp_phone is not None:
         village.ngo_whatsapp_phone = body.ngo_whatsapp_phone.strip() or None
+    if body.bank_account_number is not None:
+        village.bank_account_number = body.bank_account_number.strip() or None
+    if body.ifsc_code is not None:
+        village.ifsc_code = body.ifsc_code.strip().upper() or None
     if body.vdc_members is not None:
         village.vdc_members = [
             {

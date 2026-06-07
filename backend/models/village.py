@@ -28,6 +28,8 @@ class Village(Base):
     village_lead_name: Mapped[str] = mapped_column(String, nullable=True)
     village_lead_phone: Mapped[str] = mapped_column(String, nullable=True)
     ngo_whatsapp_phone: Mapped[str] = mapped_column(String, nullable=True)
+    bank_account_number: Mapped[str] = mapped_column(String, nullable=True)
+    ifsc_code: Mapped[str] = mapped_column(String, nullable=True)
     funding_sent_date: Mapped[date] = mapped_column(Date, nullable=True)
     funding_received_date: Mapped[date] = mapped_column(Date, nullable=True)
     funding_amount: Mapped[float] = mapped_column(Float, nullable=True)

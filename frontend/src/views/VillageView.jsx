@@ -36,6 +36,8 @@ const STRINGS = {
     villageNeeds: "गावाची गरज",
     keyActivities: "गावासाठी काय करता येईल",
     focusAreas: "फोकस क्षेत्रे",
+    bankAccountNumber: "बँक खाते क्रमांक",
+    ifscCode: "आयएफएससी कोड",
     postUpdate: "अपडेट पोस्ट करा",
     whatsHappening: "गावात काय चाललंय…",
     attachMedia: "छायाचित्र किंवा व्हिडिओ जोडा",
@@ -63,6 +65,8 @@ const STRINGS = {
     villageNeeds: "Village Needs / Community Context",
     keyActivities: "Key Activities Planned",
     focusAreas: "Focus Areas",
+    bankAccountNumber: "Bank Account Number",
+    ifscCode: "IFSC Code",
     postUpdate: "Post Update",
     whatsHappening: "What's happening in the village…",
     attachMedia: "Attach image or video",
@@ -400,6 +404,8 @@ function ProposalTab({ me, onUpdate, api }) {
     fcra_expiry_date: "",
     ngo_contact_name: "",
     ngo_contact_phone: "",
+    bank_account_number: "",
+    ifsc_code: "",
     focus_areas: [],
     per_capita_income: "",
     description: "",
@@ -425,6 +431,8 @@ function ProposalTab({ me, onUpdate, api }) {
       fcra_expiry_date: me.fcra_expiry_date || "",
       ngo_contact_name: me.ngo_contact_name || "",
       ngo_contact_phone: me.ngo_contact_phone || "",
+      bank_account_number: me.bank_account_number || "",
+      ifsc_code: me.ifsc_code || "",
     }));
   }, [me]);
 
@@ -476,6 +484,8 @@ function ProposalTab({ me, onUpdate, api }) {
         fcra_expiry_date: form.fcra_expiry_date || null,
         ngo_contact_name: form.ngo_contact_name,
         ngo_contact_phone: form.ngo_contact_phone,
+        bank_account_number: form.bank_account_number,
+        ifsc_code: form.ifsc_code,
       });
       setProposal(p);
       setSuccess(submit ? "Proposal submitted and village details saved!" : "Draft saved and village details updated!");
@@ -653,6 +663,30 @@ function ProposalTab({ me, onUpdate, api }) {
               />
             ) : (
               <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ngo_contact_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.bankAccountNumber}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.bank_account_number}
+                onChange={(e) => setForm((p) => ({ ...p, bank_account_number: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.bank_account_number || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.ifscCode}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm uppercase"
+                value={form.ifsc_code}
+                onChange={(e) => setForm((p) => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ifsc_code || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
         </div>
