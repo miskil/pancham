@@ -73,6 +73,112 @@ def _normalize_activities(milestone: dict) -> list[dict]:
     ]
 
 
+FOCUS_AREA_LABELS = {
+    "HEALTH": "Health",
+    "EDUCATION": "Education",
+    "ENVIRONMENT": "Environment",
+    "INCOME_GENERATION": "Income Generation",
+    "WOMENS_EMPOWERMENT": "Women's Empowerment",
+}
+
+VILLAGE_PROFILE_SECTIONS = [
+    ("Basic Village Information", [
+        ("population", "Population"),
+        ("total_families", "Total Families"),
+        ("area", "Village Area"),
+        ("sc_st_obc_ratio", "SC/ST/OBC & Other Population Ratio"),
+        ("literacy_rate", "Literacy Rate"),
+        ("migration_families", "Migrating Families"),
+    ]),
+    ("Poverty & Vulnerability", [
+        ("bpl_families", "Below Poverty Line (BPL) Families %"),
+        ("landless_families", "Landless Families"),
+        ("wage_dependent", "Wage-Dependent Families"),
+        ("malnourished_children", "Malnourished Children"),
+        ("women_headed", "Women-Headed Families"),
+        ("disabled", "Persons with Disability"),
+        ("elderly_alone", "Elderly Living Alone"),
+    ]),
+    ("Water & Water Security", [
+        ("drinking_sources", "Drinking Water Sources"),
+        ("scarcity_months", "Water Scarcity Months/Year"),
+        ("groundwater_level", "Groundwater Level"),
+        ("irrigated_area", "Irrigated Area"),
+        ("tanker_dependency", "Tanker Dependency"),
+        ("conservation_status", "Water Conservation Status"),
+    ]),
+    ("Agriculture & Livelihoods", [
+        ("main_crops", "Main Crops"),
+        ("irrigated_rainfed", "Irrigated & Rainfed Area"),
+        ("crop_productivity", "Crop Productivity"),
+        ("livestock", "Livestock Count"),
+        ("fpo_exists", "FPO Exists?"),
+        ("non_farm_employment", "Non-Farm Employment Opportunities"),
+        ("avg_income", "Average Family Income"),
+    ]),
+    ("Infrastructure", [
+        ("roads", "Road Connectivity"),
+        ("electricity", "Electricity Availability"),
+        ("mobile_network", "Mobile Network"),
+        ("internet", "Internet Facility"),
+        ("public_transport", "Public Transport"),
+        ("housing", "Housing Condition"),
+    ]),
+    ("Education", [
+        ("schools", "Primary & Secondary Schools"),
+        ("attendance", "School Attendance"),
+        ("out_of_school", "Out-of-School Children"),
+        ("girls_education", "Girls' Education Status"),
+        ("digital_education", "Digital Education Facilities"),
+    ]),
+    ("Health & Nutrition", [
+        ("phc_distance", "Distance to PHC"),
+        ("asha_anganwadi", "ASHA & Anganwadi Workers"),
+        ("maternal_child_health", "Maternal & Child Health"),
+        ("anemia", "Anemia"),
+        ("vaccination", "Vaccination Coverage"),
+    ]),
+    ("Local Governance", [
+        ("gramsabha_count", "Gram Sabha Count & Regularity"),
+        ("gramsabha_attendance", "Gram Sabha Attendance"),
+        ("women_participation", "Women's Participation"),
+        ("gpdp_quality", "GPDP Quality"),
+        ("committees", "Committee Functioning"),
+        ("financial_transparency", "Financial Transparency"),
+        ("scheme_implementation", "Govt Scheme Implementation"),
+    ]),
+    ("Community Readiness", [
+        ("shramdan", "Readiness for Shramdan"),
+        ("financial_contribution", "Financial Contribution Readiness"),
+        ("shg_active", "Active Self-Help Groups (SHG)"),
+        ("youth_groups", "Youth Groups"),
+        ("farmer_groups", "Farmer Groups"),
+        ("local_leadership", "Local Leadership"),
+        ("collective_history", "History of Collective Work"),
+    ]),
+    ("Ongoing Projects", [
+        ("water_conservation", "Water Conservation Projects"),
+        ("csr_projects", "CSR Projects"),
+        ("ngo_projects", "Other NGO Projects"),
+        ("agriculture_programs", "Agriculture Development Programs"),
+        ("infrastructure_schemes", "Infrastructure Schemes"),
+    ]),
+    ("Environment & Climate Risk", [
+        ("drought_prone", "Drought Proneness"),
+        ("flood_risk", "Flood Risk"),
+        ("soil_erosion", "Soil Erosion"),
+        ("forest_area", "Forest Area"),
+        ("climate_impact", "Climate Change Impact"),
+    ]),
+    ("Tribal & PESA Status", [
+        ("scheduled_area", "Village in Scheduled Area?"),
+        ("pesa_applicable", "PESA Applicable?"),
+        ("forest_rights", "Forest Rights Claims"),
+        ("forest_dependency", "Dependence on Forest Resources"),
+    ]),
+]
+
+
 # ── Proposal export ──────────────────────────────────────────────────────────
 
 @router.post("/proposals/{proposal_id}")
@@ -107,33 +213,65 @@ async def export_proposal(
         _row(doc, "Submitted", str(proposal.submitted_at.date()) if proposal.submitted_at else "Not submitted")
         doc.add_paragraph()
 
+        _heading(doc, "NGO Partner", level=2)
+        _row(doc, "NGO Name", village.ngo_name or "—")
+        _row(doc, "FCRA Number", village.fcra_number or "—")
+        _row(doc, "FCRA Expiry", str(village.fcra_expiry_date) if village.fcra_expiry_date else "—")
+        _row(doc, "NGO Lead", village.ngo_contact_name or "—")
+        _row(doc, "NGO Lead Phone", village.ngo_contact_phone or "—")
+        if village.ngo_whatsapp_phone:
+            _row(doc, "WhatsApp", village.ngo_whatsapp_phone)
+        _row(doc, "Bank Account Number", village.bank_account_number or "—")
+        _row(doc, "IFSC Code", village.ifsc_code or "—")
+        doc.add_paragraph()
+
         _heading(doc, "Village Lead", level=2)
         _row(doc, "Name", village.village_lead_name or "—")
         _row(doc, "Phone", village.village_lead_phone or "—")
         doc.add_paragraph()
 
-        _heading(doc, "NGO Partner", level=2)
-        _row(doc, "NGO Name", village.ngo_name or "—")
-        _row(doc, "Contact Name", village.ngo_contact_name or "—")
-        _row(doc, "Phone", village.ngo_contact_phone or "—")
-        if village.ngo_whatsapp_phone:
-            _row(doc, "WhatsApp", village.ngo_whatsapp_phone)
+        _heading(doc, "Focus Areas", level=2)
+        raw_areas = [item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()]
+        labeled_areas = ", ".join(FOCUS_AREA_LABELS.get(a, a) for a in raw_areas) or "—"
+        doc.add_paragraph(labeled_areas)
         doc.add_paragraph()
 
-        _heading(doc, "Proposal Details", level=2)
-        focus_areas = ", ".join([item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()])
-        _row(doc, "Focus Areas", focus_areas or "")
-        _row(doc, "गावाच दर डोई उत्पन्न (रु.)", f"Rs {proposal.per_capita_income}" if proposal.per_capita_income else "")
-        doc.add_paragraph()
-
-        _heading(doc, "गावाची भौगोलीक आणि सामाजीक माहिती", level=2)
+        _heading(doc, "Geographic & Social Description", level=2)
         doc.add_paragraph(proposal.description or "—")
 
-        _heading(doc, "गावाची गरज", level=2)
+        _heading(doc, "Village Needs / Community Context", level=2)
         doc.add_paragraph(proposal.community_context or "—")
 
-        _heading(doc, "गावा साठी काय करता येईल", level=2)
+        _heading(doc, "Key Activities Planned", level=2)
         doc.add_paragraph(proposal.key_activities or "—")
+
+        profile = village.village_profile or {}
+        for section_title, fields in VILLAGE_PROFILE_SECTIONS:
+            section_key = section_title.lower().replace(" ", "_").replace("&", "and").replace("/", "_")
+            # match the JS key: basic, poverty, water, agriculture, ...
+            js_key = {
+                "basic_village_information": "basic",
+                "poverty_and_vulnerability": "poverty",
+                "water_and_water_security": "water",
+                "agriculture_and_livelihoods": "agriculture",
+                "infrastructure": "infrastructure",
+                "education": "education",
+                "health_and_nutrition": "health",
+                "local_governance": "governance",
+                "community_readiness": "community",
+                "ongoing_projects": "projects",
+                "environment_and_climate_risk": "environment",
+                "tribal_and_pesa_status": "tribal",
+            }.get(section_key, section_key)
+            section_data = profile.get(js_key, {})
+            if not any(section_data.get(fk) for fk, _ in fields):
+                continue
+            _heading(doc, section_title, level=2)
+            for field_key, field_label in fields:
+                val = section_data.get(field_key)
+                if val:
+                    _row(doc, field_label, str(val))
+            doc.add_paragraph()
 
         if proposal.reviewer_notes:
             _heading(doc, "Reviewer Notes", level=2)
