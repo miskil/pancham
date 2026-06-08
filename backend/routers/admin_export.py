@@ -309,6 +309,7 @@ async def export_proposal(
 
         _heading(doc, L["key_activities"], level=2)
         doc.add_paragraph(proposal.key_activities or "—")
+        doc.add_paragraph()
 
         _heading(doc, L["village_profile"], level=1)
         profile = village.village_profile or {}

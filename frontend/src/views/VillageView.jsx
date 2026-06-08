@@ -803,49 +803,6 @@ function ProposalTab({ me, onUpdate, api }) {
         </div>
       </div>
 
-      {VILLAGE_PROFILE_SECTIONS.map((section) => {
-        const sectionData = form.village_profile?.[section.key] || {};
-        return (
-          <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">{section[lang]}</h3>
-              {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {section.fields.map((field) => (
-                <div key={field.key}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
-                  {canEdit ? (
-                    <input
-                      className="w-full border rounded px-3 py-2 text-sm bg-white"
-                      value={sectionData[field.key] || ""}
-                      onChange={(e) => setForm((p) => ({
-                        ...p,
-                        village_profile: {
-                          ...p.village_profile,
-                          [section.key]: { ...(p.village_profile?.[section.key] || {}), [field.key]: e.target.value },
-                        },
-                      }))}
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">
-                      {sectionData[field.key] || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      {proposal?.reviewer_notes && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
-          <strong>Admin notes:</strong> {proposal.reviewer_notes}
-        </div>
-      )}
-      {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
-
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{s.focusAreas}</label>
         {canEdit ? (
@@ -918,6 +875,49 @@ function ProposalTab({ me, onUpdate, api }) {
           </p>
         )}
       </div>
+
+      {VILLAGE_PROFILE_SECTIONS.map((section) => {
+        const sectionData = form.village_profile?.[section.key] || {};
+        return (
+          <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700">{section[lang]}</h3>
+              {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {section.fields.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
+                  {canEdit ? (
+                    <input
+                      className="w-full border rounded px-3 py-2 text-sm bg-white"
+                      value={sectionData[field.key] || ""}
+                      onChange={(e) => setForm((p) => ({
+                        ...p,
+                        village_profile: {
+                          ...p.village_profile,
+                          [section.key]: { ...(p.village_profile?.[section.key] || {}), [field.key]: e.target.value },
+                        },
+                      }))}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">
+                      {sectionData[field.key] || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {proposal?.reviewer_notes && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+          <strong>Admin notes:</strong> {proposal.reviewer_notes}
+        </div>
+      )}
+      {loadError && <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">Proposal could not be loaded: {loadError}</div>}
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">{success}</div>}
 
