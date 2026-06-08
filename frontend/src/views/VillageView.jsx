@@ -1274,7 +1274,7 @@ function FundingTab({ api, me }) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Receipt Document</label>
                 {round.receipt_filename ? (
                   <div className="flex items-center gap-2 text-sm">
-                    <a href={round.receipt_url} target="_blank" rel="noreferrer" className="text-primary-700 underline truncate">{round.receipt_filename}</a>
+                    <span className="text-gray-700 truncate">{round.receipt_filename}</span>
                     {canEditFunding && <span className="text-xs text-gray-400">(replace below)</span>}
                   </div>
                 ) : (

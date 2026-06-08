@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, LargeBinary, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
@@ -24,6 +24,7 @@ class FundingRound(Base):
     funding_received_by_ngo_lead_name: Mapped[str] = mapped_column(String, nullable=True)
     receipt_filename: Mapped[str] = mapped_column(String, nullable=True)
     receipt_url: Mapped[str] = mapped_column(String, nullable=True)
+    receipt_content: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
