@@ -292,8 +292,12 @@ async def export_proposal(
         doc.add_paragraph()
 
         _heading(doc, L["focus_areas"], level=2)
-        raw_areas = [item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()]
-        labeled_areas = ", ".join(FOCUS_AREA_LABELS.get(a, {}).get(lang, a) for a in raw_areas) or "—"
+        selected = {item.strip() for item in (proposal.focus_area or "").split(",") if item.strip()}
+        labeled_areas = ", ".join(
+            FOCUS_AREA_LABELS[code][lang]
+            for code in FOCUS_AREA_LABELS
+            if code in selected
+        ) or "—"
         doc.add_paragraph(labeled_areas)
         doc.add_paragraph()
 
