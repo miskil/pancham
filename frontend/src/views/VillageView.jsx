@@ -78,7 +78,7 @@ const VILLAGE_PROFILE_SECTIONS = [
   { key: "community", mr: "समुदायाची तयारी", en: "Community Readiness", fields: [
     { key: "shramdan",              mr: "श्रमदानाची तयारी",                    en: "Readiness for Shramdan" },
     { key: "financial_contribution",mr: "आर्थिक योगदानाची तयारी",              en: "Financial Contribution Readiness" },
-    { key: "shg_active",            mr: "SHG सक्रिय आहेत का?",                en: "SHGs Active?" },
+    { key: "shg_active",            mr: "सक्रिय बचत गट",                      en: "Active Self-Help Groups (SHG)" },
     { key: "youth_groups",          mr: "युवक मंडळे",                          en: "Youth Groups" },
     { key: "farmer_groups",         mr: "शेतकरी गट",                           en: "Farmer Groups" },
     { key: "local_leadership",      mr: "स्थानिक नेतृत्व",                      en: "Local Leadership" },
@@ -519,7 +519,6 @@ function ProposalTab({ me, onUpdate, api }) {
     ifsc_code: "",
     village_profile: {},
     focus_areas: [],
-    per_capita_income: "",
     description: "",
     community_context: "",
     key_activities: "",
@@ -556,7 +555,6 @@ function ProposalTab({ me, onUpdate, api }) {
       setForm((prev) => ({
         ...prev,
         focus_areas: p.focus_areas || (p.focus_area ? p.focus_area.split(",").map((item) => item.trim()).filter(Boolean) : []),
-        per_capita_income: p.per_capita_income || "",
         description: p.description || "",
         community_context: p.community_context || "",
         key_activities: p.key_activities || "",
@@ -578,7 +576,6 @@ function ProposalTab({ me, onUpdate, api }) {
     try {
       const body = {
         focus_areas: form.focus_areas,
-        per_capita_income: form.per_capita_income,
         description: form.description,
         community_context: form.community_context,
         key_activities: form.key_activities,
@@ -852,7 +849,7 @@ function ProposalTab({ me, onUpdate, api }) {
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{s.focusAreas}</label>
         {canEdit ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
             {s.focusAreaOptions.map((item) => {
               const checked = (form.focus_areas || []).includes(item.code);
               return (
@@ -873,24 +870,6 @@ function ProposalTab({ me, onUpdate, api }) {
             {(form.focus_areas || []).length > 0
               ? s.focusAreaOptions.filter((o) => (form.focus_areas || []).includes(o.code)).map((o) => o.label).join(", ")
               : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">{s.perCapitaIncome}</label>
-        {canEdit ? (
-          <input
-            type="text"
-            inputMode="numeric"
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder={lang === "mr" ? "उदा. 4500" : "e.g. 4500"}
-            value={form.per_capita_income}
-            onChange={(e) => setForm((p) => ({ ...p, per_capita_income: e.target.value }))}
-          />
-        ) : (
-          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-            {form.per_capita_income ? `Rs ${form.per_capita_income}` : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
