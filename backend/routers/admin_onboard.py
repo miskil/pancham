@@ -54,8 +54,12 @@ class VillageOut(BaseModel):
     fcra_expiry_date: date | None = None
     ngo_contact_name: str | None = None
     ngo_contact_phone: str | None = None
+    ngo_whatsapp_phone: str | None = None
+    bank_account_number: str | None = None
+    ifsc_code: str | None = None
     village_lead_name: str | None = None
     village_lead_phone: str | None = None
+    village_profile: dict | None = None
     is_active: bool
     bhau_enabled: bool
     internal_status: str
@@ -82,8 +86,12 @@ def village_to_out(v: Village, temp_password: str | None = None, login_username:
         fcra_expiry_date=v.fcra_expiry_date,
         ngo_contact_name=v.ngo_contact_name,
         ngo_contact_phone=v.ngo_contact_phone,
+        ngo_whatsapp_phone=v.ngo_whatsapp_phone,
+        bank_account_number=v.bank_account_number,
+        ifsc_code=v.ifsc_code,
         village_lead_name=v.village_lead_name,
         village_lead_phone=v.village_lead_phone,
+        village_profile=v.village_profile or {},
         is_active=v.is_active,
         bhau_enabled=v.bhau_enabled,
         internal_status=v.internal_status,

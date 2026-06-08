@@ -7,7 +7,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
-import { VillageView } from "./VillageView";
+import { VillageView, VILLAGE_PROFILE_SECTIONS } from "./VillageView";
 
 const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
@@ -680,38 +680,44 @@ function ProposalsTab() {
             <VillageStageTracker stage={selected.stage || "PROPOSAL"} subStatus={selected.sub_status} />
             <h2 className="font-semibold">{selected.village_name}</h2>
             <VillageOrgReadOnly village={selectedVillage} />
-            <div className="space-y-2 text-sm">
-              {!!(selected.focus_areas?.length) && (
-                <div>
-                  <span className="text-xs text-gray-500 uppercase">Focus Areas</span>
-                  <p className="text-gray-800">{selected.focus_areas.join(", ")}</p>
-                </div>
-              )}
-              {!!selected.per_capita_income && (
-                <div>
-                  <span className="text-xs text-gray-500 uppercase">गावाच दर डोई उत्पन्न (रु.)</span>
-                  <p className="text-gray-800">Rs {selected.per_capita_income}</p>
-                </div>
-              )}
-              {!!selected.description && (
-                <div>
-                  <span className="text-xs text-gray-500 uppercase">गावाची भौगोलीक आणि सामाजीक माहिती</span>
-                  <p className="text-gray-800 whitespace-pre-wrap">{selected.description}</p>
-                </div>
-              )}
-              {!!selected.community_context && (
-                <div>
-                  <span className="text-xs text-gray-500 uppercase">गावाची गरज</span>
-                  <p className="text-gray-800 whitespace-pre-wrap">{selected.community_context}</p>
-                </div>
-              )}
-              {!!selected.key_activities && (
-                <div>
-                  <span className="text-xs text-gray-500 uppercase">गावा साठी काय करता येईल</span>
-                  <p className="text-gray-800 whitespace-pre-wrap">{selected.key_activities}</p>
-                </div>
-              )}
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Focus Areas</span>
+                <p className="text-gray-800 mt-0.5">
+                  {(selected.focus_areas?.length
+                    ? Object.keys(FOCUS_AREA_LABELS).filter((c) => selected.focus_areas.includes(c)).map((c) => FOCUS_AREA_LABELS[c]).join(", ")
+                    : "—")}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">गावाची भौगोलीक आणि सामाजीक माहिती</span>
+                <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.description || "—"}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">गावाची गरज</span>
+                <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.community_context || "—"}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">गावा साठी काय करता येईल</span>
+                <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.key_activities || "—"}</p>
+              </div>
             </div>
+            {VILLAGE_PROFILE_SECTIONS.map((section) => {
+              const sectionData = (selectedVillage?.village_profile || {})[section.key] || {};
+              return (
+                <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-2">
+                  <p className="text-sm font-semibold text-gray-700">{section.en}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {section.fields.map((field) => (
+                      <div key={field.key}>
+                        <span className="text-xs text-gray-500">{field.en}: </span>
+                        <span className="text-gray-800">{sectionData[field.key] || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <textarea className="w-full border rounded px-3 py-2 text-sm h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -1513,20 +1519,42 @@ function StatusTab() {
   );
 }
 
+const FOCUS_AREA_LABELS = {
+  HEALTH: "Health",
+  EDUCATION: "Education",
+  ENVIRONMENT: "Environment",
+  INCOME_GENERATION: "Income Generation",
+  WOMENS_EMPOWERMENT: "Women's Empowerment",
+};
+
+function OrgRow({ label, value }) {
+  if (!value) return null;
+  return <p><span className="font-medium">{label}:</span> {value}</p>;
+}
+
 function VillageOrgReadOnly({ village }) {
   if (!village) return null;
-  const hasOrg = village.district || village.taluka || village.ngo_name || village.fcra_number || village.fcra_expiry_date || village.ngo_contact_name || village.ngo_contact_phone || village.village_lead_name || village.village_lead_phone;
-  if (!hasOrg) return null;
   return (
-    <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700">
-      <p className="text-lg font-bold text-gray-900">{village.name || "-"}</p>
-      <p><span className="font-medium">District:</span> {village.district || "-"}</p>
-      <p><span className="font-medium">Taluka:</span> {village.taluka || "-"}</p>
-      <p><span className="font-medium">NGO:</span> {village.ngo_name || "-"}</p>
-      <p><span className="font-medium">FCRA:</span> {village.fcra_number || "-"}</p>
-      <p><span className="font-medium">FCRA Expiry:</span> {village.fcra_expiry_date || "-"}</p>
-      <p><span className="font-medium">NGO Lead:</span> {village.ngo_contact_name || "-"}{village.ngo_contact_phone ? ` (${village.ngo_contact_phone})` : ""}</p>
-      <p><span className="font-medium">Village Lead:</span> {village.village_lead_name || "-"}{village.village_lead_phone ? ` (${village.village_lead_phone})` : ""}</p>
+    <div className="space-y-3">
+      <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+        <p className="font-semibold text-gray-800 mb-1">NGO Partner</p>
+        <OrgRow label="NGO Name" value={village.ngo_name} />
+        <OrgRow label="FCRA Number" value={village.fcra_number} />
+        <OrgRow label="FCRA Expiry" value={village.fcra_expiry_date} />
+        <OrgRow label="NGO Lead" value={village.ngo_contact_name} />
+        <OrgRow label="NGO Lead Phone" value={village.ngo_contact_phone} />
+        <OrgRow label="WhatsApp" value={village.ngo_whatsapp_phone} />
+        <OrgRow label="Bank Account" value={village.bank_account_number} />
+        <OrgRow label="IFSC Code" value={village.ifsc_code} />
+      </div>
+      <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+        <p className="font-semibold text-gray-800 mb-1">Village</p>
+        <OrgRow label="Name" value={village.name} />
+        <OrgRow label="District" value={village.district} />
+        <OrgRow label="Taluka" value={village.taluka} />
+        <OrgRow label="Village Lead" value={village.village_lead_name} />
+        <OrgRow label="Phone" value={village.village_lead_phone} />
+      </div>
     </div>
   );
 }

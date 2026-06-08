@@ -9,7 +9,7 @@ import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
-const VILLAGE_PROFILE_SECTIONS = [
+export const VILLAGE_PROFILE_SECTIONS = [
   { key: "basic", mr: "गावाची मूलभूत माहिती", en: "Basic Village Information", fields: [
     { key: "population",         mr: "लोकसंख्या",                                    en: "Population" },
     { key: "total_families",     mr: "एकूण कुटुंबांची संख्या",                       en: "Total Families" },
