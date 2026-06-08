@@ -34,6 +34,7 @@ class OrgProfileIn(BaseModel):
     ngo_whatsapp_phone: str | None = None
     bank_account_number: str | None = None
     ifsc_code: str | None = None
+    village_profile: dict | None = None
     vdc_members: list[VdcMember] | None = None
 
 
@@ -51,6 +52,7 @@ class OrgProfileOut(BaseModel):
     ngo_whatsapp_phone: str | None = None
     bank_account_number: str | None = None
     ifsc_code: str | None = None
+    village_profile: dict | None = None
     vdc_members: list[VdcMember]
 
 
@@ -90,6 +92,7 @@ def _serialize_org(village: Village) -> OrgProfileOut:
         ngo_whatsapp_phone=village.ngo_whatsapp_phone,
         bank_account_number=village.bank_account_number,
         ifsc_code=village.ifsc_code,
+        village_profile=village.village_profile or {},
         vdc_members=members,
     )
 
@@ -185,6 +188,8 @@ async def update_village_org(
         village.bank_account_number = body.bank_account_number.strip() or None
     if body.ifsc_code is not None:
         village.ifsc_code = body.ifsc_code.strip().upper() or None
+    if body.village_profile is not None:
+        village.village_profile = body.village_profile
     if body.vdc_members is not None:
         village.vdc_members = [
             {
@@ -252,6 +257,8 @@ async def update_admin_village_org(
         village.bank_account_number = body.bank_account_number.strip() or None
     if body.ifsc_code is not None:
         village.ifsc_code = body.ifsc_code.strip().upper() or None
+    if body.village_profile is not None:
+        village.village_profile = body.village_profile
     if body.vdc_members is not None:
         village.vdc_members = [
             {

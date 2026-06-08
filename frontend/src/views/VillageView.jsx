@@ -9,6 +9,103 @@ import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
 
+const VILLAGE_PROFILE_SECTIONS = [
+  { key: "basic", mr: "गावाची मूलभूत माहिती", en: "Basic Village Information", fields: [
+    { key: "population",         mr: "लोकसंख्या",                                    en: "Population" },
+    { key: "total_families",     mr: "एकूण कुटुंबांची संख्या",                       en: "Total Families" },
+    { key: "area",               mr: "गावाचे क्षेत्रफळ",                              en: "Village Area" },
+    { key: "sc_st_obc_ratio",    mr: "SC/ST/OBC व इतर लोकसंख्येचे प्रमाण",           en: "SC/ST/OBC & Other Population Ratio" },
+    { key: "literacy_rate",      mr: "साक्षरता दर",                                  en: "Literacy Rate" },
+    { key: "migration_families", mr: "स्थलांतर करणाऱ्या कुटुंबांची संख्या",          en: "Migrating Families" },
+  ]},
+  { key: "poverty", mr: "गरिबी व असुरक्षितता", en: "Poverty & Vulnerability", fields: [
+    { key: "bpl_families",          mr: "BPL कुटुंबांचे प्रमाण",                  en: "BPL Families %" },
+    { key: "landless_families",     mr: "भूमिहीन कुटुंबे",                          en: "Landless Families" },
+    { key: "wage_dependent",        mr: "मजुरीवर अवलंबून कुटुंबे",                  en: "Wage-Dependent Families" },
+    { key: "malnourished_children", mr: "कुपोषित बालकांची संख्या",                 en: "Malnourished Children" },
+    { key: "women_headed",          mr: "महिला प्रमुख कुटुंबे",                      en: "Women-Headed Families" },
+    { key: "disabled",              mr: "दिव्यांग व्यक्ती",                          en: "Persons with Disability" },
+    { key: "elderly_alone",         mr: "वृद्ध व एकटे राहणारे नागरिक",              en: "Elderly Living Alone" },
+  ]},
+  { key: "water", mr: "पाणी व जलसुरक्षा", en: "Water & Water Security", fields: [
+    { key: "drinking_sources",    mr: "पिण्याच्या पाण्याचे स्रोत",         en: "Drinking Water Sources" },
+    { key: "scarcity_months",     mr: "वर्षातील पाणीटंचाईचे महिने",         en: "Water Scarcity Months/Year" },
+    { key: "groundwater_level",   mr: "भूजल पातळी",                         en: "Groundwater Level" },
+    { key: "irrigated_area",      mr: "सिंचनाखालील क्षेत्र",                en: "Irrigated Area" },
+    { key: "tanker_dependency",   mr: "टँकरवर अवलंबित्व",                   en: "Tanker Dependency" },
+    { key: "conservation_status", mr: "जलसंधारणाची स्थिती",                 en: "Water Conservation Status" },
+  ]},
+  { key: "agriculture", mr: "शेती व उपजीविका", en: "Agriculture & Livelihoods", fields: [
+    { key: "main_crops",           mr: "प्रमुख पिके",                              en: "Main Crops" },
+    { key: "irrigated_rainfed",    mr: "सिंचित व जिरायती क्षेत्र",                 en: "Irrigated & Rainfed Area" },
+    { key: "crop_productivity",    mr: "पीक उत्पादकता",                            en: "Crop Productivity" },
+    { key: "livestock",            mr: "पशुधन संख्या",                             en: "Livestock Count" },
+    { key: "fpo_exists",           mr: "FPO अस्तित्वात आहे का?",                  en: "FPO Exists?" },
+    { key: "non_farm_employment",  mr: "कृषीबाह्य रोजगाराच्या संधी",               en: "Non-Farm Employment Opportunities" },
+    { key: "avg_income",           mr: "कुटुंबांचे सरासरी उत्पन्न",                en: "Average Family Income" },
+  ]},
+  { key: "infrastructure", mr: "पायाभूत सुविधा", en: "Infrastructure", fields: [
+    { key: "roads",            mr: "रस्ते संपर्क",         en: "Road Connectivity" },
+    { key: "electricity",      mr: "वीज उपलब्धता",         en: "Electricity Availability" },
+    { key: "mobile_network",   mr: "मोबाईल नेटवर्क",       en: "Mobile Network" },
+    { key: "internet",         mr: "इंटरनेट सुविधा",        en: "Internet Facility" },
+    { key: "public_transport", mr: "सार्वजनिक वाहतूक",     en: "Public Transport" },
+    { key: "housing",          mr: "घरांची स्थिती",         en: "Housing Condition" },
+  ]},
+  { key: "education", mr: "शिक्षण", en: "Education", fields: [
+    { key: "schools",           mr: "प्राथमिक व माध्यमिक शाळांची उपलब्धता", en: "Primary & Secondary Schools" },
+    { key: "attendance",        mr: "शाळेत उपस्थिती",                         en: "School Attendance" },
+    { key: "out_of_school",     mr: "शाळाबाह्य मुलांचे प्रमाण",               en: "Out-of-School Children" },
+    { key: "girls_education",   mr: "मुलींच्या शिक्षणाची स्थिती",             en: "Girls' Education Status" },
+    { key: "digital_education", mr: "डिजिटल शिक्षण सुविधा",                    en: "Digital Education Facilities" },
+  ]},
+  { key: "health", mr: "आरोग्य व पोषण", en: "Health & Nutrition", fields: [
+    { key: "phc_distance",         mr: "PHC पर्यंतचे अंतर",                   en: "Distance to PHC" },
+    { key: "asha_anganwadi",       mr: "आशा व अंगणवाडी सेविका उपलब्धता",     en: "ASHA & Anganwadi Workers" },
+    { key: "maternal_child_health",mr: "माता व बाल आरोग्य स्थिती",            en: "Maternal & Child Health" },
+    { key: "anemia",               mr: "रक्तक्षय (Anemia)",                   en: "Anemia" },
+    { key: "vaccination",          mr: "लसीकरणाचे प्रमाण",                    en: "Vaccination Coverage" },
+  ]},
+  { key: "governance", mr: "स्थानिक स्वराज्य संस्था व प्रशासन", en: "Local Governance", fields: [
+    { key: "gramsabha_count",        mr: "ग्रामसभांची संख्या व नियमितता",        en: "Gram Sabha Count & Regularity" },
+    { key: "gramsabha_attendance",   mr: "ग्रामसभेतील उपस्थिती",                en: "Gram Sabha Attendance" },
+    { key: "women_participation",    mr: "महिलांचा सहभाग",                       en: "Women's Participation" },
+    { key: "gpdp_quality",           mr: "GPDP ची गुणवत्ता",                     en: "GPDP Quality" },
+    { key: "committees",             mr: "समित्यांचे कार्य",                      en: "Committee Functioning" },
+    { key: "financial_transparency", mr: "आर्थिक पारदर्शकता",                   en: "Financial Transparency" },
+    { key: "scheme_implementation",  mr: "सरकारी योजनांची अंमलबजावणी",          en: "Govt Scheme Implementation" },
+  ]},
+  { key: "community", mr: "समुदायाची तयारी", en: "Community Readiness", fields: [
+    { key: "shramdan",              mr: "श्रमदानाची तयारी",                    en: "Readiness for Shramdan" },
+    { key: "financial_contribution",mr: "आर्थिक योगदानाची तयारी",              en: "Financial Contribution Readiness" },
+    { key: "shg_active",            mr: "SHG सक्रिय आहेत का?",                en: "SHGs Active?" },
+    { key: "youth_groups",          mr: "युवक मंडळे",                          en: "Youth Groups" },
+    { key: "farmer_groups",         mr: "शेतकरी गट",                           en: "Farmer Groups" },
+    { key: "local_leadership",      mr: "स्थानिक नेतृत्व",                      en: "Local Leadership" },
+    { key: "collective_history",    mr: "सामूहिक कामांचा इतिहास",              en: "History of Collective Work" },
+  ]},
+  { key: "projects", mr: "चालू सरकारी व इतर संस्थांचे प्रकल्प", en: "Ongoing Projects", fields: [
+    { key: "water_conservation",    mr: "जलसंधारण प्रकल्प",             en: "Water Conservation Projects" },
+    { key: "csr_projects",          mr: "CSR प्रकल्प",                   en: "CSR Projects" },
+    { key: "ngo_projects",          mr: "इतर NGO प्रकल्प",              en: "Other NGO Projects" },
+    { key: "agriculture_programs",  mr: "कृषी विकास कार्यक्रम",          en: "Agriculture Development Programs" },
+    { key: "infrastructure_schemes",mr: "पायाभूत सुविधा योजना",          en: "Infrastructure Schemes" },
+  ]},
+  { key: "environment", mr: "पर्यावरण व हवामान जोखीम", en: "Environment & Climate Risk", fields: [
+    { key: "drought_prone",   mr: "दुष्काळग्रस्तता",            en: "Drought Proneness" },
+    { key: "flood_risk",      mr: "पूर जोखीम",                  en: "Flood Risk" },
+    { key: "soil_erosion",    mr: "मृदा धूप",                   en: "Soil Erosion" },
+    { key: "forest_area",     mr: "जंगल क्षेत्र",               en: "Forest Area" },
+    { key: "climate_impact",  mr: "हवामान बदलाचा परिणाम",       en: "Climate Change Impact" },
+  ]},
+  { key: "tribal", mr: "आदिवासी व PESA स्थिती", en: "Tribal & PESA Status", fields: [
+    { key: "scheduled_area",    mr: "गाव अनुसूचित क्षेत्रात आहे का?",  en: "Village in Scheduled Area?" },
+    { key: "pesa_applicable",   mr: "PESA लागू आहे का?",               en: "PESA Applicable?" },
+    { key: "forest_rights",     mr: "वनहक्क दावे",                      en: "Forest Rights Claims" },
+    { key: "forest_dependency", mr: "वनसंपत्तीवरील अवलंबित्व",          en: "Dependence on Forest Resources" },
+  ]},
+];
+
 const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
 
 const LangContext = createContext("mr");
@@ -420,6 +517,7 @@ function ProposalTab({ me, onUpdate, api }) {
     ngo_contact_phone: "",
     bank_account_number: "",
     ifsc_code: "",
+    village_profile: {},
     focus_areas: [],
     per_capita_income: "",
     description: "",
@@ -447,6 +545,7 @@ function ProposalTab({ me, onUpdate, api }) {
       ngo_contact_phone: me.ngo_contact_phone || "",
       bank_account_number: me.bank_account_number || "",
       ifsc_code: me.ifsc_code || "",
+      village_profile: me.village_profile || {},
     }));
   }, [me]);
 
@@ -500,6 +599,7 @@ function ProposalTab({ me, onUpdate, api }) {
         ngo_contact_phone: form.ngo_contact_phone,
         bank_account_number: form.bank_account_number,
         ifsc_code: form.ifsc_code,
+        village_profile: form.village_profile,
       });
       setProposal(p);
       setSuccess(submit ? "Proposal submitted and village details saved!" : "Draft saved and village details updated!");
@@ -705,6 +805,42 @@ function ProposalTab({ me, onUpdate, api }) {
           </div>
         </div>
       </div>
+
+      {VILLAGE_PROFILE_SECTIONS.map((section) => {
+        const sectionData = form.village_profile?.[section.key] || {};
+        return (
+          <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700">{section[lang]}</h3>
+              {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {section.fields.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
+                  {canEdit ? (
+                    <input
+                      className="w-full border rounded px-3 py-2 text-sm bg-white"
+                      value={sectionData[field.key] || ""}
+                      onChange={(e) => setForm((p) => ({
+                        ...p,
+                        village_profile: {
+                          ...p.village_profile,
+                          [section.key]: { ...(p.village_profile?.[section.key] || {}), [field.key]: e.target.value },
+                        },
+                      }))}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">
+                      {sectionData[field.key] || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">

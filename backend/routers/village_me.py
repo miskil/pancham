@@ -25,6 +25,7 @@ class VillageMe(BaseModel):
     ngo_contact_phone: str | None = None
     bank_account_number: str | None = None
     ifsc_code: str | None = None
+    village_profile: dict | None = None
     village_lead_name: str | None = None
     village_lead_phone: str | None = None
     current_user_username: str | None = None
@@ -59,6 +60,7 @@ async def get_me(db: AsyncSession = Depends(get_db), user=Depends(village_only))
         ngo_contact_phone=village.ngo_contact_phone,
         bank_account_number=village.bank_account_number,
         ifsc_code=village.ifsc_code,
+        village_profile=village.village_profile or {},
         village_lead_name=village.village_lead_name, village_lead_phone=village.village_lead_phone,
         current_user_username=user.get("sub"), current_user_display_name=village_user.display_name if village_user else None,
         current_user_type=village_user.user_type if village_user else None,
