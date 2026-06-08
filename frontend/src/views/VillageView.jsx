@@ -19,7 +19,7 @@ const VILLAGE_PROFILE_SECTIONS = [
     { key: "migration_families", mr: "स्थलांतर करणाऱ्या कुटुंबांची संख्या",          en: "Migrating Families" },
   ]},
   { key: "poverty", mr: "गरिबी व असुरक्षितता", en: "Poverty & Vulnerability", fields: [
-    { key: "bpl_families",          mr: "BPL कुटुंबांचे प्रमाण",                  en: "BPL Families %" },
+    { key: "bpl_families",          mr: "गरीबी रेषेखालील कुटुंबांचे प्रमाण",       en: "Below Poverty Line (BPL) Families %" },
     { key: "landless_families",     mr: "भूमिहीन कुटुंबे",                          en: "Landless Families" },
     { key: "wage_dependent",        mr: "मजुरीवर अवलंबून कुटुंबे",                  en: "Wage-Dependent Families" },
     { key: "malnourished_children", mr: "कुपोषित बालकांची संख्या",                 en: "Malnourished Children" },
