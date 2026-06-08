@@ -226,6 +226,7 @@ function makeApi(token) {
     updateOrg: (b) => f("/village/org", { method: "PATCH", body: JSON.stringify(b) }),
     listFundingRounds: () => f("/village/funding-rounds"),
     updateFundingRound: (roundId, b) => f(`/village/funding-rounds/${roundId}`, { method: "PATCH", body: JSON.stringify(b) }),
+    uploadReceipt: (roundId, formData) => postForm(`/village/funding-rounds/${roundId}/receipt`, formData),
     getProposal: () => f("/village/proposal"),
     createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
@@ -1139,6 +1140,7 @@ function OrgTab({ me, onUpdate, api }) {
 function FundingTab({ api, me }) {
   const [loading, setLoading] = useState(true);
   const [savingRoundId, setSavingRoundId] = useState(null);
+  const [uploadingRoundId, setUploadingRoundId] = useState(null);
   const [rounds, setRounds] = useState([]);
   const canEditFunding = (me?.current_user_type || "").toUpperCase() === "NGO";
 
@@ -1184,6 +1186,20 @@ function FundingTab({ api, me }) {
       alert(err.message);
     } finally {
       setSavingRoundId(null);
+    }
+  }
+
+  async function uploadReceipt(roundId, file) {
+    setUploadingRoundId(roundId);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const updated = await api.uploadReceipt(roundId, fd);
+      setRounds((prev) => prev.map((item) => item.id === roundId ? { ...item, receipt_filename: updated.receipt_filename, receipt_url: updated.receipt_url } : item));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploadingRoundId(null);
     }
   }
 
@@ -1238,6 +1254,31 @@ function FundingTab({ api, me }) {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Received Message for Audit</label>
                 <textarea className="w-full border rounded px-3 py-2 text-sm h-24" value={round.funding_received_message} onChange={(e) => updateRound(round.id, "funding_received_message", e.target.value)} placeholder="Village audit message" readOnly={!canEditFunding} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Receipt Document</label>
+                {round.receipt_filename ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <a href={round.receipt_url} target="_blank" rel="noreferrer" className="text-primary-700 underline truncate">{round.receipt_filename}</a>
+                    {canEditFunding && <span className="text-xs text-gray-400">(replace below)</span>}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No receipt uploaded yet.</p>
+                )}
+                {canEditFunding && (
+                  <label className="mt-2 flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      disabled={uploadingRoundId === round.id}
+                      onChange={(e) => { if (e.target.files?.[0]) uploadReceipt(round.id, e.target.files[0]); }}
+                    />
+                    <span className={`btn-sm ${uploadingRoundId === round.id ? "bg-gray-400" : "bg-primary-700"} text-xs`}>
+                      {uploadingRoundId === round.id ? "Uploading…" : round.receipt_filename ? "Replace Receipt" : "Upload Receipt"}
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
           </div>

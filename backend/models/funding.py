@@ -22,6 +22,8 @@ class FundingRound(Base):
     funding_received_message: Mapped[str] = mapped_column(Text, nullable=True)
     funding_received_by_username: Mapped[str] = mapped_column(String, nullable=True)
     funding_received_by_ngo_lead_name: Mapped[str] = mapped_column(String, nullable=True)
+    receipt_filename: Mapped[str] = mapped_column(String, nullable=True)
+    receipt_url: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

@@ -1,6 +1,10 @@
+import os
+import shutil
+import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +15,8 @@ from ..models.funding import FundingRound
 from ..models.village import Village
 from ..models.village_user import VillageUser
 from ..utils.numbers import parse_locale_float
+
+RECEIPT_UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads/receipts")
 
 router = APIRouter(tags=["funding"])
 admin_only = require_role("ADMIN")
@@ -56,6 +62,8 @@ class FundingRoundOut(BaseModel):
     funding_received_message: str | None = None
     funding_received_by_username: str | None = None
     funding_received_by_ngo_lead_name: str | None = None
+    receipt_filename: str | None = None
+    receipt_url: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
 
@@ -93,6 +101,8 @@ def _serialize_round(funding_round: FundingRound) -> FundingRoundOut:
         funding_received_message=funding_round.funding_received_message,
         funding_received_by_username=funding_round.funding_received_by_username,
         funding_received_by_ngo_lead_name=funding_round.funding_received_by_ngo_lead_name,
+        receipt_filename=funding_round.receipt_filename,
+        receipt_url=funding_round.receipt_url,
         created_at=funding_round.created_at.isoformat() if funding_round.created_at else None,
         updated_at=funding_round.updated_at.isoformat() if funding_round.updated_at else None,
     )
@@ -255,3 +265,58 @@ async def update_village_funding_round(
     await db.commit()
     await db.refresh(funding_round)
     return _serialize_round(funding_round)
+
+
+@router.post("/village/funding-rounds/{round_id}/receipt", response_model=FundingRoundOut)
+async def upload_village_receipt(
+    round_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(village_only),
+):
+    await _ensure_ngo_lead_user(db, user["village_id"], user.get("sub"))
+    funding_round = await _load_round_for_village(db, user["village_id"], round_id)
+
+    storage_url = os.getenv("STORAGE_URL", "")
+    safe_name = f"receipt_{uuid.uuid4()}_{file.filename}"
+
+    if storage_url:
+        receipt_url = f"{storage_url}/{safe_name}"
+    else:
+        os.makedirs(RECEIPT_UPLOAD_DIR, exist_ok=True)
+        dest = os.path.join(RECEIPT_UPLOAD_DIR, safe_name)
+        with open(dest, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        receipt_url = f"/uploads/receipts/{safe_name}"
+
+    funding_round.receipt_filename = file.filename
+    funding_round.receipt_url = receipt_url
+    await db.commit()
+    await db.refresh(funding_round)
+    return _serialize_round(funding_round)
+
+
+@router.get("/admin/villages/{village_id}/funding-rounds/{round_id}/receipt")
+async def download_admin_receipt(
+    village_id: str,
+    round_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(admin_only),
+):
+    funding_round = await _load_round_for_admin(db, village_id, round_id)
+    if not funding_round.receipt_url:
+        raise HTTPException(status_code=404, detail="No receipt uploaded")
+
+    storage_url = os.getenv("STORAGE_URL", "")
+    if storage_url:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=funding_round.receipt_url)
+
+    local_path = funding_round.receipt_url.lstrip("/")
+    if not os.path.exists(local_path):
+        raise HTTPException(status_code=404, detail="Receipt file not found on disk")
+    return FileResponse(
+        path=local_path,
+        filename=funding_round.receipt_filename or "receipt",
+        media_type="application/octet-stream",
+    )

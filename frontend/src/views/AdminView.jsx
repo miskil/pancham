@@ -1409,6 +1409,24 @@ function FundingTab() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">NGO Lead Name</label>
                   <input className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={round.funding_received_by_ngo_lead_name} readOnly placeholder="NGO lead name from village org profile" />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Receipt Document</label>
+                  {round.receipt_filename ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-700 truncate">{round.receipt_filename}</span>
+                      <a
+                        href={`/api/admin/villages/${villageId}/funding-rounds/${round.id}/receipt`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-sm bg-gray-500 shrink-0 text-xs"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">No receipt uploaded by village.</p>
+                  )}
+                </div>
               </div>
             </div>
 
