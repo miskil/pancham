@@ -10,7 +10,7 @@ import uuid, os, shutil
 router = APIRouter(prefix="/village/evidence", tags=["village-evidence"])
 village_only = require_role("VILLAGE")
 
-DOC_TYPES = {"GRAMSABHA", "PANCHAYAT", "MOU", "OTHER"}
+DOC_TYPES = {"GRAMSABHA", "PANCHAYAT", "MOU", "GPDP", "OTHER"}
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads/evidence")
 
 

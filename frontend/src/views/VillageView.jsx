@@ -1143,6 +1143,7 @@ const DOC_TYPE_LABELS = {
   GRAMSABHA: "Gramsabha Letter",
   PANCHAYAT: "Panchayat Letter",
   MOU: "MoU",
+  GPDP: "GPDP",
   OTHER: "Other Document",
 };
 
