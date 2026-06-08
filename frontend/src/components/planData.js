@@ -6,14 +6,14 @@ export const DEFAULT_PLAN_META = {
 };
 
 export const PLAN_CATEGORY_OPTIONS = [
-  { code: "H", label: "H", title: "Health" },
-  { code: "E", label: "E", title: "Education" },
-  { code: "En", label: "En", title: "Environment" },
-  { code: "WE", label: "WE", title: "Women's Empowerment" },
-  { code: "IG", label: "IG", title: "Income Generation" },
+  { code: "H",  label: "Health" },
+  { code: "E",  label: "Education" },
+  { code: "En", label: "Environment" },
+  { code: "WE", label: "Women's Empowerment" },
+  { code: "IG", label: "Income Generation" },
 ];
 
-const CATEGORY_BY_CODE = Object.fromEntries(PLAN_CATEGORY_OPTIONS.map((item) => [item.code, item.title]));
+const CATEGORY_BY_CODE = Object.fromEntries(PLAN_CATEGORY_OPTIONS.map((item) => [item.code, item.label]));
 const LEGACY_CATEGORY_BY_LABEL = {
   Health: "H",
   Healthcare: "H",

@@ -3,7 +3,6 @@ import {
   DEFAULT_PLAN_META,
   PLAN_CATEGORY_OPTIONS,
   PLAN_YEARS,
-  categoryTitle,
   createEmptyActivity,
   createEmptyMilestone,
   getPlanMeta,
@@ -69,27 +68,31 @@ function MilestoneCard({
               placeholder={`${labels.milestone} ${milestoneIndex}`}
             />
           )}
-          <div className="mt-2 flex flex-wrap gap-1">
-            {PLAN_CATEGORY_OPTIONS.map((item) => {
-              const active = (milestone.categories || []).includes(item.code);
-              return (
-                <button
-                  key={item.code}
-                  type="button"
-                  onClick={() => !readonly && toggleCategory(item.code)}
-                  disabled={readonly}
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium transition-all ${
-                    active
-                      ? "bg-primary-600 text-white border border-primary-600"
-                      : "bg-ink-100 text-ink-400 border border-ink-200"
-                  } ${readonly ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
-                  title={item.title}
-                >
-                  {item.code}
-                </button>
-              );
-            })}
-          </div>
+          {readonly ? (
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-600">
+              {PLAN_CATEGORY_OPTIONS.filter((item) => (milestone.categories || []).includes(item.code)).map((item) => (
+                <span key={item.code}>{item.label}</span>
+              ))}
+              {!(milestone.categories || []).length && <span className="text-ink-300">—</span>}
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+              {PLAN_CATEGORY_OPTIONS.map((item) => {
+                const checked = (milestone.categories || []).includes(item.code);
+                return (
+                  <label key={item.code} className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCategory(item.code)}
+                      className="w-4 h-4 rounded border-gray-300 accent-primary-600"
+                    />
+                    <span className="text-sm text-ink-700">{item.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">
