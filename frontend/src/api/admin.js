@@ -40,7 +40,10 @@ export const requestPlanAmendment = (id, notes) => patch(`/admin/plans/${id}/req
 
 export const listStatusUpdates = (villageId) => get(`/admin/status-updates${villageId ? `?village_id=${villageId}` : ""}`);
 
-export const exportProposal = (id) => download(`/admin/export/proposals/${id}`, "POST");
+export const exportProposal = (id) => {
+  const lang = localStorage.getItem("pancham_lang") || "mr";
+  return download(`/admin/export/proposals/${id}?lang=${lang}`, "POST");
+};
 export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");
 export const publishUpdate = (id) => patch(`/admin/status-updates/${id}/publish`);
 export const unpublishUpdate = (id) => patch(`/admin/status-updates/${id}/unpublish`);
