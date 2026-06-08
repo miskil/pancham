@@ -36,6 +36,13 @@ const STRINGS = {
     villageNeeds: "गावाची गरज",
     keyActivities: "गावासाठी काय करता येईल",
     focusAreas: "फोकस क्षेत्रे",
+    focusAreaOptions: [
+      { code: "HEALTH", label: "आरोग्य" },
+      { code: "EDUCATION", label: "शिक्षण" },
+      { code: "ENVIRONMENT", label: "पर्यावरण" },
+      { code: "INCOME_GENERATION", label: "उत्पन्न निर्मिती" },
+      { code: "WOMENS_EMPOWERMENT", label: "महिला सक्षमीकरण" },
+    ],
     bankAccountNumber: "बँक खाते क्रमांक",
     ifscCode: "आयएफएससी कोड",
     postUpdate: "अपडेट पोस्ट करा",
@@ -65,6 +72,13 @@ const STRINGS = {
     villageNeeds: "Village Needs / Community Context",
     keyActivities: "Key Activities Planned",
     focusAreas: "Focus Areas",
+    focusAreaOptions: [
+      { code: "HEALTH", label: "Health" },
+      { code: "EDUCATION", label: "Education" },
+      { code: "ENVIRONMENT", label: "Environment" },
+      { code: "INCOME_GENERATION", label: "Income Generation" },
+      { code: "WOMENS_EMPOWERMENT", label: "Women's Empowerment" },
+    ],
     bankAccountNumber: "Bank Account Number",
     ifscCode: "IFSC Code",
     postUpdate: "Post Update",
@@ -702,29 +716,27 @@ function ProposalTab({ me, onUpdate, api }) {
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{s.focusAreas}</label>
         {canEdit ? (
-          <div className="flex flex-wrap gap-1.5">
-            {PLAN_CATEGORY_OPTIONS.map((item) => {
-              const active = (form.focus_areas || []).includes(item.code);
+          <div className="flex flex-col gap-2">
+            {s.focusAreaOptions.map((item) => {
+              const checked = (form.focus_areas || []).includes(item.code);
               return (
-                <button
-                  key={item.code}
-                  type="button"
-                  onClick={() => toggleFocusArea(item.code)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
-                    active
-                      ? "bg-primary-600 text-white border-primary-600"
-                      : "bg-white text-gray-600 border-gray-300 hover:border-primary-300"
-                  }`}
-                  title={item.title}
-                >
-                  {item.code}
-                </button>
+                <label key={item.code} className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleFocusArea(item.code)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 accent-primary-600"
+                  />
+                  <span className="text-sm text-gray-700">{item.label}</span>
+                </label>
               );
             })}
           </div>
         ) : (
           <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8">
-            {(form.focus_areas || []).length > 0 ? (form.focus_areas || []).join(", ") : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
+            {(form.focus_areas || []).length > 0
+              ? s.focusAreaOptions.filter((o) => (form.focus_areas || []).includes(o.code)).map((o) => o.label).join(", ")
+              : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
