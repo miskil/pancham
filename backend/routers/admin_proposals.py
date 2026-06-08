@@ -15,6 +15,7 @@ VALID_TRANSITIONS = {
     "SUBMITTED": ["UNDER_REVIEW"],
     "UNDER_REVIEW": ["AMENDMENT_REQUESTED", "ACCEPTED", "DECLINED"],
     "AMENDED": ["UNDER_REVIEW", "AMENDMENT_REQUESTED", "ACCEPTED", "DECLINED"],
+    "ACCEPTED": ["AMENDMENT_REQUESTED", "DECLINED"],
 }
 
 
@@ -100,6 +101,8 @@ async def _transition_proposal(proposal_id: str, new_status: str, notes: str | N
         p.village.internal_status = "UNDER_REVIEW"
     elif new_status == "AMENDMENT_REQUESTED":
         p.village.internal_status = "AMENDMENT_REQUESTED"
+    elif new_status == "DECLINED":
+        p.village.internal_status = "DECLINED"
     await db.commit()
     return {"ok": True, "status": new_status}
 

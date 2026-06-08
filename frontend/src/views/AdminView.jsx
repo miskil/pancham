@@ -725,6 +725,12 @@ function ProposalsTab() {
                   <button onClick={() => act(api.declineProposal)} className="btn-sm bg-red-500">Decline</button>
                 </>
               )}
+              {selected.status === "ACCEPTED" && (
+                <>
+                  <button onClick={() => act(api.requestAmendment)} className="btn-sm bg-yellow-500">Request Amendment</button>
+                  <button onClick={() => act(api.declineProposal)} className="btn-sm bg-red-500">Decline</button>
+                </>
+              )}
               <ExportDriveButton onExport={() => api.exportProposal(selected.id)} />
             </div>
             <VillageChannel villageId={selected.village_id} />
