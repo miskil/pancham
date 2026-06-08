@@ -226,7 +226,11 @@ function makeApi(token) {
     updateOrg: (b) => f("/village/org", { method: "PATCH", body: JSON.stringify(b) }),
     listFundingRounds: () => f("/village/funding-rounds"),
     updateFundingRound: (roundId, b) => f(`/village/funding-rounds/${roundId}`, { method: "PATCH", body: JSON.stringify(b) }),
-    uploadReceipt: (roundId, formData) => postForm(`/village/funding-rounds/${roundId}/receipt`, formData),
+    uploadReceipt: (roundId, formData) => {
+      const headers = { Authorization: `Bearer ${token}` };
+      return fetch(`${import.meta.env.VITE_API_URL || "/api"}/village/funding-rounds/${roundId}/receipt`, { method: "POST", body: formData, headers })
+        .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
+    },
     getProposal: () => f("/village/proposal"),
     createProposal: (b) => f("/village/proposal", { method: "POST", body: JSON.stringify(b) }),
     updateProposal: (b) => f("/village/proposal", { method: "PATCH", body: JSON.stringify(b) }),
