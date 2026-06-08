@@ -5,6 +5,7 @@ export const getOrg = () => get("/village/org");
 export const updateOrg = (body) => patch("/village/org", body);
 export const listFundingRounds = () => get("/village/funding-rounds");
 export const updateFundingRound = (roundId, body) => patch(`/village/funding-rounds/${roundId}`, body);
+export const uploadReceipt = (roundId, formData) => postForm(`/village/funding-rounds/${roundId}/receipt`, formData);
 
 export const getProposal = () => get("/village/proposal");
 export const createProposal = (body) => post("/village/proposal", body);

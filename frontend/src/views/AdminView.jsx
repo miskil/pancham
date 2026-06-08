@@ -1194,6 +1194,7 @@ function FundingTab() {
   async function addRound() {
     if (!villageId) return;
     setCreating(true);
+    console.log("[AdminFunding] creating round for villageId:", villageId, "village name:", villages.find(v => v.id === villageId)?.name);
     try {
       const created = await api.createVillageFundingRound(villageId, {});
       setRounds((prev) => [...prev, {

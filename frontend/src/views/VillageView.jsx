@@ -1151,7 +1151,9 @@ function FundingTab({ api, me }) {
 
   useEffect(() => {
     setLoadError(null);
+    console.log("[FundingTab] fetching rounds for village:", me?.id, me?.name);
     api.listFundingRounds().then((data) => {
+      console.log("[FundingTab] rounds from server:", data);
       setRounds(data.map((item) => ({
         ...item,
         funding_sent_date: item.funding_sent_date || "",
@@ -1161,7 +1163,10 @@ function FundingTab({ api, me }) {
         village_funding_note: item.village_funding_note || item.funding_status_note || "",
         funding_received_message: item.funding_received_message || "",
       })));
-    }).catch((err) => setLoadError(err.message || "Failed to load funding rounds")).finally(() => setLoading(false));
+    }).catch((err) => {
+      console.error("[FundingTab] error loading rounds:", err);
+      setLoadError(err.message || "Failed to load funding rounds");
+    }).finally(() => setLoading(false));
   }, [api]);
 
   function updateRound(roundId, key, value) {
