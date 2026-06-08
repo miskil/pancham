@@ -460,7 +460,7 @@ function DashboardTab({ me, api }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatCard label="Milestones" value={currentPlan ? `${milestoneCount}` : "—"} note={currentPlan ? "across 3 years" : "Submit a plan to start"} />
         <StatCard label="% Complete" value={currentPlan ? `${planFillPercent}%` : "—"} note={currentPlan ? `${filledRows}/${planRows.length} activities filled` : "Activities and notes will drive progress"} />
-        <StatCard label="$ Spent" value={currentPlan ? `$${totalSpent.toLocaleString("en-IN")}` : "—"} note={currentPlan ? "Total planned amount" : "Plan totals appear here"} />
+        <StatCard label="₹ Planned" value={currentPlan ? `₹${totalSpent.toLocaleString("en-IN")}` : "—"} note={currentPlan ? "Total planned amount" : "Plan totals appear here"} />
         <StatCard
           label="Impact"
           value={currentPlan ? `${impactMilestones} milestone${impactMilestones === 1 ? "" : "s"}` : "—"}
@@ -1502,6 +1502,7 @@ function ProjectTab({ me, api }) {
         <PlanMilestonesViewer
           plan={{ plan_data: draftData }}
           readonly={false}
+          villageMode
           labels={planLabels}
           onChange={setDraftData}
         />
@@ -1573,6 +1574,7 @@ function ProjectTab({ me, api }) {
           <PlanMilestonesViewer
             plan={{ ...baseline, plan_data: baselineDataForView }}
             readonly={!baselineEditable}
+            villageMode
             labels={planLabels}
             onChange={baselineEditable ? setDraftData : undefined}
           />
@@ -1593,6 +1595,7 @@ function ProjectTab({ me, api }) {
             <PlanMilestonesViewer
               plan={{ plan_data: currentWipData }}
               readonly={false}
+              villageMode
               labels={planLabels}
               onChange={setDraftData}
             />

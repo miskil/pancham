@@ -32,6 +32,7 @@ function MilestoneCard({
   readonly,
   currency,
   rate,
+  villageMode,
   labels,
   onChange,
   onRemove,
@@ -101,6 +102,9 @@ function MilestoneCard({
             {currency === "INR" ? "₹" : "$"}{currency === "INR"
               ? formatEnglishNumber(milestoneTotal)
               : formatEnglishNumber(milestoneTotal / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {villageMode && rate > 0 && milestoneTotal > 0 && (
+              <span className="ml-1 text-ink-400 font-normal">≈ ${formatEnglishNumber(milestoneTotal / rate, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+            )}
           </span>
           {!readonly && onRemove && (
             <button onClick={onRemove} title={labels.removeMilestoneTitle} className="ml-1 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none">
@@ -178,24 +182,34 @@ function MilestoneCard({
                         })}
                         placeholder="POC"
                       />
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
-                        value={currency === "USD"
-                          ? (activity.amount != null ? (activity.amount / rate).toFixed(2) : "")
-                          : (activity.amount ?? "")}
-                        onChange={(e) => {
-                          const value = parseLocaleNumber(e.target.value);
-                          onChange({
-                            ...milestone,
-                            activities: milestone.activities.map((item, idx) => idx === activityIndex
-                              ? { ...item, amount: currency === "USD" && value != null ? value * rate : value }
-                              : item),
-                          });
-                        }}
-                        placeholder="Amount"
-                      />
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-ink-400 shrink-0">{currency === "INR" || villageMode ? "₹" : "$"}</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="w-full border border-primary-100 rounded-xl px-3 py-2 text-sm bg-white text-right"
+                            value={currency === "USD" && !villageMode
+                              ? (activity.amount != null ? (activity.amount / rate).toFixed(2) : "")
+                              : (activity.amount ?? "")}
+                            onChange={(e) => {
+                              const value = parseLocaleNumber(e.target.value);
+                              onChange({
+                                ...milestone,
+                                activities: milestone.activities.map((item, idx) => idx === activityIndex
+                                  ? { ...item, amount: currency === "USD" && !villageMode && value != null ? value * rate : value }
+                                  : item),
+                              });
+                            }}
+                            placeholder="Amount"
+                          />
+                        </div>
+                        {villageMode && rate > 0 && activity.amount != null && activity.amount !== "" && (
+                          <span className="text-xs text-ink-400 text-right pr-2">
+                            ≈ ${formatEnglishNumber((parseLocaleNumber(activity.amount) || 0) / rate, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {onRemoveActivity && (
                       <button onClick={() => onRemoveActivity(activityIndex)} title={labels.removeActivityTitle} className="mt-2 text-ink-300 hover:text-red-500 transition-colors text-lg leading-none flex-shrink-0">
@@ -247,7 +261,7 @@ function MilestoneCard({
   );
 }
 
-function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, onChange }) {
+function YearPanel({ year, rows, readonly, currency, rate, villageMode, grandTotal, labels, onChange }) {
   const data = rows && rows.length > 0 ? rows : [createEmptyMilestone()];
   const yearTotal = data.reduce((sum, milestone) => {
     return sum + (milestone.activities || []).reduce((activitySum, activity) => activitySum + (parseLocaleNumber(activity.amount) || 0), 0);
@@ -288,9 +302,15 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, o
         <h3 className="text-sm font-semibold text-ink-700">Year {year}</h3>
         <div className="flex items-center gap-2 text-xs text-ink-500">
           <span>Total:</span>
-          <span className="font-semibold text-ink-800">{currency === "INR" ? "₹" : "$"}{currency === "INR"
-            ? formatEnglishNumber(yearTotal)
-            : formatEnglishNumber(yearTotal / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="font-semibold text-ink-800">
+            ₹{formatEnglishNumber(yearTotal)}
+            {villageMode && rate > 0 && yearTotal > 0 && (
+              <span className="ml-1 font-normal text-ink-400">≈ ${formatEnglishNumber(yearTotal / rate, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+            )}
+            {!villageMode && currency === "USD" && (
+              <span> (${formatEnglishNumber(yearTotal / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+            )}
+          </span>
           {grandTotal > 0 && <span>({((yearTotal / grandTotal) * 100).toFixed(1)}%)</span>}
         </div>
       </div>
@@ -304,6 +324,7 @@ function YearPanel({ year, rows, readonly, currency, rate, grandTotal, labels, o
             readonly={readonly}
             currency={currency}
             rate={rate}
+            villageMode={villageMode}
             labels={labels}
             onChange={(next) => updateMilestone(milestoneIndex, next)}
             onRemove={readonly ? null : () => removeMilestone(milestoneIndex)}
@@ -335,21 +356,27 @@ const DEFAULT_LABELS = {
   removeMilestoneTitle: "Remove milestone",
 };
 
-export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }) {
+export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels, villageMode = false }) {
   const mergedLabels = { ...DEFAULT_LABELS, ...(labels || {}) };
   const initialMeta = getPlanMeta(plan?.plan_data);
   const [currency, setCurrency] = useState(initialMeta.currency || DEFAULT_PLAN_META.currency);
   const [rate, setRate] = useState(initialMeta.rate || DEFAULT_PLAN_META.rate);
   const [liveRateLoading, setLiveRateLoading] = useState(false);
   const [liveRateUpdatedAt, setLiveRateUpdatedAt] = useState("");
+  const [rateSource, setRateSource] = useState("plan");
 
   if (!plan) return <p className="text-sm text-gray-400">Not available yet.</p>;
 
   const normalizedPlan = normalizePlanData(plan.plan_data);
 
+  // In village mode, currency is always INR for input; rate is read-only
+  const effectiveCurrency = villageMode ? "INR" : currency;
+
   useEffect(() => {
     const nextMeta = getPlanMeta(plan?.plan_data);
-    setCurrency(nextMeta.currency);
+    if (!villageMode) {
+      setCurrency(nextMeta.currency);
+    }
     setRate(nextMeta.rate);
   }, [plan]);
 
@@ -376,28 +403,34 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }
       const data = await res.json();
       const inr = Number(data?.rates?.INR);
       if (!Number.isFinite(inr) || inr <= 0) throw new Error("Invalid live exchange rate");
-      handleRateChange(inr);
+      if (villageMode) {
+        setRate(inr);
+        setRateSource("live");
+      } else {
+        handleRateChange(inr);
+      }
       setLiveRateUpdatedAt(data?.time_last_update_utc || new Date().toUTCString());
     } catch {
-      // Keep the current manually entered rate when live fetch fails.
+      // Keep the current rate when live fetch fails.
     } finally {
       setLiveRateLoading(false);
     }
   }
 
   useEffect(() => {
-    if (currency === "USD") refreshLiveRate();
+    if (villageMode) {
+      refreshLiveRate();
+    } else if (currency === "USD") {
+      refreshLiveRate();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency]);
+  }, [currency, villageMode]);
 
   const grandTotalINR = sumPlanAmount(normalizedPlan);
-  const symbol = currency === "INR" ? "₹" : "$";
-  const grandTotalDisplay = currency === "INR"
-    ? formatEnglishNumber(grandTotalINR)
-    : formatEnglishNumber(grandTotalINR / rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const grandTotalUSD = rate > 0 ? grandTotalINR / rate : 0;
 
   function handleYearChange(year, rows) {
-    emitPlanWithMeta({ ...normalizedPlan, [String(year)]: rows }, { currency, rate });
+    emitPlanWithMeta({ ...normalizedPlan, [String(year)]: rows }, { currency: effectiveCurrency, rate });
   }
 
   return (
@@ -405,46 +438,64 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="bg-primary-50 border border-primary-200 rounded-xl px-4 py-3 flex items-center gap-3">
           <span className="text-sm text-primary-700 font-medium">3-Year Grand Total</span>
-          <span className="text-lg font-bold text-primary-800">{symbol}{grandTotalDisplay}</span>
+          <span className="text-lg font-bold text-primary-800">
+            ₹{formatEnglishNumber(grandTotalINR)}
+            {(villageMode || effectiveCurrency === "USD") && rate > 0 && grandTotalINR > 0 && (
+              <span className="ml-2 text-base font-normal text-primary-600">
+                ≈ ${formatEnglishNumber(grandTotalUSD, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
+            )}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-medium text-ink-600">Amount in</span>
-          <span className="inline-flex rounded-xl border border-primary-100 overflow-hidden text-sm bg-white">
-            <button
-              onClick={() => handleCurrencyChange("INR")}
-              className={`px-3 py-2 ${currency === "INR" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
-            >
-              ₹
-            </button>
-            <button
-              onClick={() => handleCurrencyChange("USD")}
-              className={`px-3 py-2 ${currency === "USD" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
-            >
-              $
-            </button>
-          </span>
-          {currency === "USD" && (
+          {villageMode ? (
             <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
-              $1 = ₹
-              <input
-                type="text"
-                inputMode="decimal"
-                value={rate}
-                onChange={(e) => handleRateChange(parseLocaleNumber(e.target.value) || 1)}
-                className="w-20 border border-primary-100 rounded-xl px-2 py-1 text-right text-ink-700 bg-white"
-              />
-              <button
-                type="button"
-                onClick={refreshLiveRate}
-                disabled={liveRateLoading}
-                className="px-2 py-1 rounded border border-primary-100 text-xs text-ink-600 hover:bg-ink-50 disabled:opacity-60"
-              >
-                {liveRateLoading ? "Loading..." : "Use Live"}
-              </button>
-              {liveRateUpdatedAt && (
-                <span className="text-xs text-ink-400">Updated: {liveRateUpdatedAt}</span>
-              )}
+              <span>$1 = ₹{rate}</span>
+              <span className="text-xs text-ink-400">
+                {liveRateLoading ? "(fetching…)" : rateSource === "live" && liveRateUpdatedAt ? "(live)" : "(admin set)"}
+              </span>
             </span>
+          ) : (
+            <>
+              <span className="text-sm font-medium text-ink-600">Amount in</span>
+              <span className="inline-flex rounded-xl border border-primary-100 overflow-hidden text-sm bg-white">
+                <button
+                  onClick={() => handleCurrencyChange("INR")}
+                  className={`px-3 py-2 ${effectiveCurrency === "INR" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
+                >
+                  ₹
+                </button>
+                <button
+                  onClick={() => handleCurrencyChange("USD")}
+                  className={`px-3 py-2 ${effectiveCurrency === "USD" ? "bg-primary-700 text-white" : "text-ink-500 hover:bg-ink-50"}`}
+                >
+                  $
+                </button>
+              </span>
+              {effectiveCurrency === "USD" && (
+                <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
+                  $1 = ₹
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={rate}
+                    onChange={(e) => handleRateChange(parseLocaleNumber(e.target.value) || 1)}
+                    className="w-20 border border-primary-100 rounded-xl px-2 py-1 text-right text-ink-700 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={refreshLiveRate}
+                    disabled={liveRateLoading}
+                    className="px-2 py-1 rounded border border-primary-100 text-xs text-ink-600 hover:bg-ink-50 disabled:opacity-60"
+                  >
+                    {liveRateLoading ? "Loading..." : "Use Live"}
+                  </button>
+                  {liveRateUpdatedAt && (
+                    <span className="text-xs text-ink-400">Updated: {liveRateUpdatedAt}</span>
+                  )}
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -455,8 +506,9 @@ export function PlanMilestonesViewer({ plan, readonly = true, onChange, labels }
           year={year}
           rows={normalizedPlan[year]}
           readonly={readonly}
-          currency={currency}
+          currency={effectiveCurrency}
           rate={rate}
+          villageMode={villageMode}
           grandTotal={grandTotalINR}
           labels={mergedLabels}
           onChange={(rows) => handleYearChange(year, rows)}
