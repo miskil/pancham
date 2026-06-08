@@ -1143,12 +1143,14 @@ function OrgTab({ me, onUpdate, api }) {
 
 function FundingTab({ api, me }) {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [savingRoundId, setSavingRoundId] = useState(null);
   const [uploadingRoundId, setUploadingRoundId] = useState(null);
   const [rounds, setRounds] = useState([]);
   const canEditFunding = (me?.current_user_type || "").toUpperCase() === "NGO";
 
   useEffect(() => {
+    setLoadError(null);
     api.listFundingRounds().then((data) => {
       setRounds(data.map((item) => ({
         ...item,
@@ -1159,7 +1161,7 @@ function FundingTab({ api, me }) {
         village_funding_note: item.village_funding_note || item.funding_status_note || "",
         funding_received_message: item.funding_received_message || "",
       })));
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => setLoadError(err.message || "Failed to load funding rounds")).finally(() => setLoading(false));
   }, [api]);
 
   function updateRound(roundId, key, value) {
@@ -1211,6 +1213,10 @@ function FundingTab({ api, me }) {
 
   if (loading) {
     return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading funding rounds...</div>;
+  }
+
+  if (loadError) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-red-600">Could not load funding rounds: {loadError}</div>;
   }
 
   return (
