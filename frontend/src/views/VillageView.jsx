@@ -8,7 +8,6 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
-import { VillageProfileCard } from "../components/VillageProfileCard";
 
 export const VILLAGE_PROFILE_SECTIONS = [
   { key: "basic", mr: "गावाची मूलभूत माहिती", en: "Basic Village Information", fields: [
@@ -107,14 +106,14 @@ export const VILLAGE_PROFILE_SECTIONS = [
   ]},
 ];
 
-const TABS = ["Dashboard", "Proposal", "Visual Profile", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
 
 const LangContext = createContext("mr");
 const useLang = () => useContext(LangContext);
 
 const STRINGS = {
   mr: {
-    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", "Visual Profile": "दृश्य प्रोफाईल", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
+    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
     planLabels: { milestone: "महत्वाचा टप्पा", impact: "परिणाम", activity: "कार्य", addActivity: "+ कार्य जोडा", addMilestone: "+ महत्वाचा टप्पा जोडा" },
     villageProposal: "गावाचा प्रस्ताव",
     villageInfo: "गावाची माहिती",
@@ -150,7 +149,7 @@ const STRINGS = {
     readOnly: "फक्त वाचा",
   },
   en: {
-    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", "Visual Profile": "Visual Profile", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
+    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
     planLabels: { milestone: "Milestone", impact: "Impact", activity: "Activity", addActivity: "+ Add Activity", addMilestone: "+ Add Milestone" },
     villageProposal: "Village Proposal",
     villageInfo: "Village Information",
@@ -383,8 +382,7 @@ export function VillageView({ previewToken } = {}) {
       <div className="content-shell max-w-4xl mx-auto">
         {tab === "Dashboard" && <DashboardTab me={me} api={api} />}
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
-        {tab === "Visual Profile" && <VisualProfileTab me={me} api={api} />}
-        {tab === "Evidence" && <EvidenceTab api={api} />}
+{tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Funding" && <FundingTab api={api} me={me} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
@@ -508,27 +506,6 @@ function StatCard({ label, value, note }) {
   );
 }
 
-function VisualProfileTab({ me, api }) {
-  const lang = useContext(LangContext);
-  const [profile, setProfile] = useState(me?.village_profile || {});
-  const [loading, setLoading] = useState(!me?.village_profile);
-
-  useEffect(() => {
-    if (me?.village_profile) { setProfile(me.village_profile); setLoading(false); return; }
-    api.getMe().then((data) => setProfile(data.village_profile || {})).catch(() => {}).finally(() => setLoading(false));
-  }, [api, me]);
-
-  if (loading) return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading...</div>;
-
-  return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-500 px-1">
-        {lang === "mr" ? "प्रोफाईल किती भरली आहे हे खाली दिसते. अधिक माहितीसाठी प्रस्ताव टॅब उघडा." : "Radar shows how complete each section of the village profile is. Fill in more via the Proposal tab."}
-      </p>
-      <VillageProfileCard profile={profile} sections={VILLAGE_PROFILE_SECTIONS} lang={lang} />
-    </div>
-  );
-}
 
 function ProposalTab({ me, onUpdate, api }) {
   const lang = useLang();

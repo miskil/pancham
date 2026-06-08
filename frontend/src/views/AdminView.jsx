@@ -8,7 +8,6 @@ import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
 import { VillageView, VILLAGE_PROFILE_SECTIONS } from "./VillageView";
-import { VillageProfileCard } from "../components/VillageProfileCard";
 
 const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
