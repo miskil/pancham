@@ -11,6 +11,7 @@ export const listVillageFundingRounds = (id) => get(`/admin/villages/${id}/fundi
 export const createVillageFundingRound = (id, body) => post(`/admin/villages/${id}/funding-rounds`, body);
 export const updateVillageFundingRound = (villageId, roundId, body) => patch(`/admin/villages/${villageId}/funding-rounds/${roundId}`, body);
 export const deleteVillageFundingRound = (villageId, roundId) => del(`/admin/villages/${villageId}/funding-rounds/${roundId}`);
+export const downloadVillageReceipt = (villageId, roundId) => download(`/admin/villages/${villageId}/funding-rounds/${roundId}/receipt`, "GET");
 
 // Village users
 export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}/users`);

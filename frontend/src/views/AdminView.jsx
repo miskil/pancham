@@ -1254,6 +1254,22 @@ function FundingTab() {
     return String(value);
   }
 
+  async function downloadReceipt(round) {
+    try {
+      const { blob, filename } = await api.downloadVillageReceipt(villageId, round.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || round.receipt_filename || "receipt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Download failed: " + err.message);
+    }
+  }
+
   async function saveRound(roundId) {
     if (!villageId) return;
     const current = rounds.find((item) => item.id === roundId);
@@ -1415,14 +1431,13 @@ function FundingTab() {
                   {round.receipt_filename ? (
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-700 truncate">{round.receipt_filename}</span>
-                      <a
-                        href={`/api/admin/villages/${villageId}/funding-rounds/${round.id}/receipt`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => downloadReceipt(round)}
                         className="btn-sm bg-gray-500 shrink-0 text-xs"
                       >
                         Download
-                      </a>
+                      </button>
                     </div>
                   ) : (
                     <p className="text-xs text-gray-400">No receipt uploaded by village.</p>
