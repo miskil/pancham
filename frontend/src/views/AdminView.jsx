@@ -703,11 +703,22 @@ function ProposalsTab() {
                 <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.key_activities || "—"}</p>
               </div>
             </div>
-            <VillageProfileCard
-              profile={selectedVillage?.village_profile || {}}
-              sections={VILLAGE_PROFILE_SECTIONS}
-              lang="en"
-            />
+            {VILLAGE_PROFILE_SECTIONS.map((section) => {
+              const sectionData = (selectedVillage?.village_profile || {})[section.key] || {};
+              return (
+                <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-2">
+                  <p className="text-sm font-semibold text-gray-700">{section.en}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {section.fields.map((field) => (
+                      <div key={field.key}>
+                        <span className="text-xs text-gray-500">{field.en}: </span>
+                        <span className="text-gray-800">{sectionData[field.key] || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <textarea className="w-full border rounded px-3 py-2 text-sm h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />

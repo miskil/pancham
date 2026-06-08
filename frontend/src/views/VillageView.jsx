@@ -107,14 +107,14 @@ export const VILLAGE_PROFILE_SECTIONS = [
   ]},
 ];
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
+const TABS = ["Dashboard", "Proposal", "Visual Profile", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
 
 const LangContext = createContext("mr");
 const useLang = () => useContext(LangContext);
 
 const STRINGS = {
   mr: {
-    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
+    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", "Visual Profile": "दृश्य प्रोफाईल", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
     planLabels: { milestone: "महत्वाचा टप्पा", impact: "परिणाम", activity: "कार्य", addActivity: "+ कार्य जोडा", addMilestone: "+ महत्वाचा टप्पा जोडा" },
     villageProposal: "गावाचा प्रस्ताव",
     villageInfo: "गावाची माहिती",
@@ -150,7 +150,7 @@ const STRINGS = {
     readOnly: "फक्त वाचा",
   },
   en: {
-    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
+    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", "Visual Profile": "Visual Profile", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
     planLabels: { milestone: "Milestone", impact: "Impact", activity: "Activity", addActivity: "+ Add Activity", addMilestone: "+ Add Milestone" },
     villageProposal: "Village Proposal",
     villageInfo: "Village Information",
@@ -383,6 +383,7 @@ export function VillageView({ previewToken } = {}) {
       <div className="content-shell max-w-4xl mx-auto">
         {tab === "Dashboard" && <DashboardTab me={me} api={api} />}
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
+        {tab === "Visual Profile" && <VisualProfileTab me={me} api={api} />}
         {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab me={me} onUpdate={setMe} api={api} />}
         {tab === "Funding" && <FundingTab api={api} me={me} />}
@@ -503,6 +504,28 @@ function StatCard({ label, value, note }) {
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-base font-semibold text-gray-800 mt-1">{value}</p>
       {note && <p className="text-xs text-gray-500 leading-snug">{note}</p>}
+    </div>
+  );
+}
+
+function VisualProfileTab({ me, api }) {
+  const lang = useContext(LangContext);
+  const [profile, setProfile] = useState(me?.village_profile || {});
+  const [loading, setLoading] = useState(!me?.village_profile);
+
+  useEffect(() => {
+    if (me?.village_profile) { setProfile(me.village_profile); setLoading(false); return; }
+    api.getMe().then((data) => setProfile(data.village_profile || {})).catch(() => {}).finally(() => setLoading(false));
+  }, [api, me]);
+
+  if (loading) return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading...</div>;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-500 px-1">
+        {lang === "mr" ? "प्रोफाईल किती भरली आहे हे खाली दिसते. अधिक माहितीसाठी प्रस्ताव टॅब उघडा." : "Radar shows how complete each section of the village profile is. Fill in more via the Proposal tab."}
+      </p>
+      <VillageProfileCard profile={profile} sections={VILLAGE_PROFILE_SECTIONS} lang={lang} />
     </div>
   );
 }
@@ -882,16 +905,19 @@ function ProposalTab({ me, onUpdate, api }) {
         )}
       </div>
 
-      {canEdit ? (
-        VILLAGE_PROFILE_SECTIONS.map((section) => {
-          const sectionData = form.village_profile?.[section.key] || {};
-          return (
-            <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+      {VILLAGE_PROFILE_SECTIONS.map((section) => {
+        const sectionData = form.village_profile?.[section.key] || {};
+        return (
+          <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+            <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">{section[lang]}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {section.fields.map((field) => (
-                  <div key={field.key}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
+              {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {section.fields.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
+                  {canEdit ? (
                     <input
                       className="w-full border rounded px-3 py-2 text-sm bg-white"
                       value={sectionData[field.key] || ""}
@@ -903,19 +929,17 @@ function ProposalTab({ me, onUpdate, api }) {
                         },
                       }))}
                     />
-                  </div>
-                ))}
-              </div>
+                  ) : (
+                    <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">
+                      {sectionData[field.key] || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          );
-        })
-      ) : (
-        <VillageProfileCard
-          profile={form.village_profile || {}}
-          sections={VILLAGE_PROFILE_SECTIONS}
-          lang={lang}
-        />
-      )}
+          </div>
+        );
+      })}
 
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
