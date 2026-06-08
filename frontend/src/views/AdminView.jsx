@@ -8,6 +8,7 @@ import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
 import { VillageView, VILLAGE_PROFILE_SECTIONS } from "./VillageView";
+import { VillageProfileCard } from "../components/VillageProfileCard";
 
 const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
@@ -702,22 +703,11 @@ function ProposalsTab() {
                 <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.key_activities || "—"}</p>
               </div>
             </div>
-            {VILLAGE_PROFILE_SECTIONS.map((section) => {
-              const sectionData = (selectedVillage?.village_profile || {})[section.key] || {};
-              return (
-                <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-2">
-                  <p className="text-sm font-semibold text-gray-700">{section.en}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    {section.fields.map((field) => (
-                      <div key={field.key}>
-                        <span className="text-xs text-gray-500">{field.en}: </span>
-                        <span className="text-gray-800">{sectionData[field.key] || "—"}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <VillageProfileCard
+              profile={selectedVillage?.village_profile || {}}
+              sections={VILLAGE_PROFILE_SECTIONS}
+              lang="en"
+            />
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
               <textarea className="w-full border rounded px-3 py-2 text-sm h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />

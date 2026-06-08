@@ -8,6 +8,7 @@ import { PlanMilestonesViewer } from "../components/PlanMilestonesViewer";
 import { AnubhavFeed } from "../components/AnubhavFeed";
 import { RichText } from "../components/RichText";
 import { PLAN_CATEGORY_OPTIONS, countFilledPlanActivities, flattenPlanActivities, normalizePlanData, sumPlanAmount } from "../components/planData";
+import { VillageProfileCard } from "../components/VillageProfileCard";
 
 export const VILLAGE_PROFILE_SECTIONS = [
   { key: "basic", mr: "गावाची मूलभूत माहिती", en: "Basic Village Information", fields: [
@@ -881,19 +882,16 @@ function ProposalTab({ me, onUpdate, api }) {
         )}
       </div>
 
-      {VILLAGE_PROFILE_SECTIONS.map((section) => {
-        const sectionData = form.village_profile?.[section.key] || {};
-        return (
-          <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
-            <div className="flex items-center justify-between">
+      {canEdit ? (
+        VILLAGE_PROFILE_SECTIONS.map((section) => {
+          const sectionData = form.village_profile?.[section.key] || {};
+          return (
+            <div key={section.key} className="rounded-lg border bg-gray-50 p-3 space-y-3">
               <h3 className="text-sm font-semibold text-gray-700">{section[lang]}</h3>
-              {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {section.fields.map((field) => (
-                <div key={field.key}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
-                  {canEdit ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {section.fields.map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{field[lang]}</label>
                     <input
                       className="w-full border rounded px-3 py-2 text-sm bg-white"
                       value={sectionData[field.key] || ""}
@@ -905,17 +903,19 @@ function ProposalTab({ me, onUpdate, api }) {
                         },
                       }))}
                     />
-                  ) : (
-                    <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">
-                      {sectionData[field.key] || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
-                    </p>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })
+      ) : (
+        <VillageProfileCard
+          profile={form.village_profile || {}}
+          sections={VILLAGE_PROFILE_SECTIONS}
+          lang={lang}
+        />
+      )}
 
       {proposal?.reviewer_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
