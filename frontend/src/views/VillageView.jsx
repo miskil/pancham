@@ -553,67 +553,6 @@ function ProposalTab({ me, onUpdate, api }) {
 
       <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">{s.villageInfo}</h3>
-          {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.name}</label>
-            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.district}</label>
-            {canEdit ? (
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.district}
-                onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.district || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.taluka}</label>
-            {canEdit ? (
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.taluka}
-                onChange={(e) => setForm((p) => ({ ...p, taluka: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.taluka || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLead}</label>
-            {canEdit ? (
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.village_lead_name}
-                onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLeadPhone}</label>
-            {canEdit ? (
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={form.village_lead_phone}
-                onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
-              />
-            ) : (
-              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
-        <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-700">{s.ngoInfo}</h3>
           {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
         </div>
@@ -701,6 +640,67 @@ function ProposalTab({ me, onUpdate, api }) {
               />
             ) : (
               <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.ifsc_code || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-gray-50 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">{s.villageInfo}</h3>
+          {!canEdit && <span className="text-xs text-gray-400">{s.readOnly}</span>}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.name}</label>
+            <p className="text-lg font-bold text-gray-900 bg-white rounded px-3 py-2 min-h-8">{me?.name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.district}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.district}
+                onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.district || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.taluka}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.taluka}
+                onChange={(e) => setForm((p) => ({ ...p, taluka: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.taluka || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLead}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_name}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_name: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_name || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageLeadPhone}</label>
+            {canEdit ? (
+              <input
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={form.village_lead_phone}
+                onChange={(e) => setForm((p) => ({ ...p, village_lead_phone: e.target.value }))}
+              />
+            ) : (
+              <p className="text-sm text-gray-800 bg-white rounded px-3 py-2 min-h-8">{form.village_lead_phone || <span className="text-gray-400 italic">{s.notFilledIn}</span>}</p>
             )}
           </div>
         </div>
