@@ -245,32 +245,29 @@ async def export_proposal(
         _heading(doc, "Key Activities Planned", level=2)
         doc.add_paragraph(proposal.key_activities or "—")
 
+        JS_KEY_MAP = {
+            "basic_village_information": "basic",
+            "poverty_and_vulnerability": "poverty",
+            "water_and_water_security": "water",
+            "agriculture_and_livelihoods": "agriculture",
+            "infrastructure": "infrastructure",
+            "education": "education",
+            "health_and_nutrition": "health",
+            "local_governance": "governance",
+            "community_readiness": "community",
+            "ongoing_projects": "projects",
+            "environment_and_climate_risk": "environment",
+            "tribal_and_pesa_status": "tribal",
+        }
         profile = village.village_profile or {}
         for section_title, fields in VILLAGE_PROFILE_SECTIONS:
             section_key = section_title.lower().replace(" ", "_").replace("&", "and").replace("/", "_")
-            # match the JS key: basic, poverty, water, agriculture, ...
-            js_key = {
-                "basic_village_information": "basic",
-                "poverty_and_vulnerability": "poverty",
-                "water_and_water_security": "water",
-                "agriculture_and_livelihoods": "agriculture",
-                "infrastructure": "infrastructure",
-                "education": "education",
-                "health_and_nutrition": "health",
-                "local_governance": "governance",
-                "community_readiness": "community",
-                "ongoing_projects": "projects",
-                "environment_and_climate_risk": "environment",
-                "tribal_and_pesa_status": "tribal",
-            }.get(section_key, section_key)
+            js_key = JS_KEY_MAP.get(section_key, section_key)
             section_data = profile.get(js_key, {})
-            if not any(section_data.get(fk) for fk, _ in fields):
-                continue
             _heading(doc, section_title, level=2)
             for field_key, field_label in fields:
                 val = section_data.get(field_key)
-                if val:
-                    _row(doc, field_label, str(val))
+                _row(doc, field_label, str(val) if val else "—")
             doc.add_paragraph()
 
         if proposal.reviewer_notes:
