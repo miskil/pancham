@@ -1609,7 +1609,7 @@ function VillageOrgReadOnly({ village }) {
         <OrgRow label="NGO Lead" value={village.ngo_contact_name} />
         <OrgRow label="NGO Lead Phone" value={village.ngo_contact_phone} />
         <OrgRow label="WhatsApp" value={village.ngo_whatsapp_phone} />
-        <OrgRow label="Bank Account" value={village.bank_account_number} />
+        <OrgRow label="FCRA Bank Account" value={village.bank_account_number} />
         <OrgRow label="IFSC Code" value={village.ifsc_code} />
       </div>
       <div className="rounded-lg border bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
