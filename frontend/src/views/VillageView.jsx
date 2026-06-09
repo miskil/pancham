@@ -1645,25 +1645,51 @@ function ProjectTab({ me, api }) {
   );
 }
 
+function buildMilestoneOptions(wipPlan) {
+  if (!wipPlan) return [];
+  const planData = normalizePlanData(wipPlan.plan_data || {});
+  const options = [];
+  for (const year of ["1", "2", "3"]) {
+    const milestones = planData[year] || [];
+    milestones.forEach((m) => {
+      const title = (m.milestone || "").trim();
+      if (title) options.push({ value: `Year ${year} — ${title}`, label: `Year ${year}: ${title}` });
+    });
+  }
+  return options;
+}
+
 function StatusTab({ me, api }) {
   const lang = useLang();
   const s = STRINGS[lang];
   const [updates, setUpdates] = useState([]);
-  const [text, setText] = useState("");
+  const [milestoneOptions, setMilestoneOptions] = useState([]);
+  const [milestoneRef, setMilestoneRef] = useState("__other__");
+  const [description, setDescription] = useState("");
+  const [notes, setNotes] = useState("");
   const [file, setFile] = useState(null);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const fileInputRef = useState(null);
 
-  useEffect(() => { api.listUpdates().then(setUpdates).catch(() => {}); }, [api]);
+  useEffect(() => {
+    api.listUpdates().then(setUpdates).catch(() => {});
+    api.getWip().then((wip) => setMilestoneOptions(buildMilestoneOptions(wip))).catch(() => {});
+  }, [api]);
+
+  const isOther = milestoneRef === "__other__";
+  const canPost = isOther ? description.trim().length > 0 : true;
 
   async function post() {
-    if (!text.trim()) return;
+    if (!canPost) return;
     setLoading(true);
     setError(null);
     try {
-      const u = await api.createUpdate({ description: text });
+      const payload = {
+        milestone_ref: isOther ? null : milestoneRef,
+        description: isOther ? description : notes,
+      };
+      const u = await api.createUpdate(payload);
       if (file) {
         const fd = new FormData();
         fd.append("file", file);
@@ -1671,8 +1697,10 @@ function StatusTab({ me, api }) {
         u.media_files = [media];
       }
       setUpdates((prev) => [u, ...prev]);
-      setText("");
+      setDescription("");
+      setNotes("");
       setFile(null);
+      setMilestoneRef("__other__");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1684,12 +1712,41 @@ function StatusTab({ me, api }) {
     <div className="space-y-4">
       <div className="bg-white rounded-xl border p-4">
         <h2 className="font-semibold text-gray-700 mb-3">{s.postUpdate}</h2>
-        <textarea
-          className="w-full border rounded px-3 py-2 text-sm h-24 mb-2"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={s.whatsHappening}
-        />
+
+        <label className="block text-xs text-gray-500 mb-1">Milestone</label>
+        <select
+          className="w-full border rounded px-3 py-2 text-sm mb-3"
+          value={milestoneRef}
+          onChange={(e) => { setMilestoneRef(e.target.value); setDescription(""); setNotes(""); }}
+        >
+          {milestoneOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+          <option value="__other__">Other</option>
+        </select>
+
+        {isOther ? (
+          <>
+            <label className="block text-xs text-gray-500 mb-1">{s.whatsHappening}</label>
+            <textarea
+              className="w-full border rounded px-3 py-2 text-sm h-24 mb-2"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={s.whatsHappening}
+            />
+          </>
+        ) : (
+          <>
+            <label className="block text-xs text-gray-500 mb-1">Notes (optional)</label>
+            <textarea
+              className="w-full border rounded px-3 py-2 text-sm h-20 mb-2"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any additional notes for this milestone update…"
+            />
+          </>
+        )}
+
         <div className="flex items-center gap-3">
           <label className="cursor-pointer flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-600">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1716,7 +1773,7 @@ function StatusTab({ me, api }) {
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         <button
           onClick={post}
-          disabled={loading || !text.trim()}
+          disabled={loading || !canPost}
           className="mt-3 btn-sm bg-primary-700 disabled:opacity-60"
         >
           {loading ? "Posting…" : "Post"}
@@ -1731,12 +1788,17 @@ function StatusTab({ me, api }) {
             <p className="text-xs text-gray-400 mb-2">
               {new Date(u.submitted_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
             </p>
+            {u.milestone_ref && (
+              <span className="inline-block text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200 rounded px-2 py-0.5 mb-2">
+                {u.milestone_ref}
+              </span>
+            )}
             {(u.media_files || []).map((m) => (
               m.media_type === "PHOTO"
                 ? <img key={m.id} src={m.file_url} alt="" className="w-full rounded mb-2" />
                 : <video key={m.id} src={m.file_url} controls className="w-full rounded mb-2" />
             ))}
-            <RichText text={u.description} />
+            {u.description && <RichText text={u.description} />}
             {u.is_published && <span className="text-xs text-green-600 font-medium mt-1 block">Published</span>}
             <button onClick={() => setSelected(selected?.id === u.id ? null : u)} className="text-xs text-primary-600 mt-1 block">
               {selected?.id === u.id ? "Hide thread" : "View thread"}

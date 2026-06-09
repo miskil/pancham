@@ -1520,13 +1520,19 @@ function StatusTab() {
                 </div>
               </div>
 
+              {u.milestone_ref && (
+                <span className="inline-block text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200 rounded px-2 py-0.5">
+                  {u.milestone_ref}
+                </span>
+              )}
+
               {(u.media_files || []).map((m) => (
                 m.media_type === "PHOTO"
                   ? <img key={m.id} src={m.file_url} alt="" className="w-full rounded" />
                   : <video key={m.id} src={m.file_url} controls className="w-full rounded" />
               ))}
 
-              <RichText text={u.description} />
+              {u.description && <RichText text={u.description} />}
 
               <button
                 onClick={() => setOpenThread(openThread === u.id ? null : u.id)}

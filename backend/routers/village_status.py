@@ -13,7 +13,8 @@ village_only = require_role("VILLAGE")
 
 
 class StatusBody(BaseModel):
-    description: str
+    milestone_ref: str | None = None
+    description: str = ""
 
 
 class MediaOut(BaseModel):
@@ -28,6 +29,7 @@ class MediaOut(BaseModel):
 
 class StatusUpdateOut(BaseModel):
     id: str
+    milestone_ref: str | None
     description: str
     submitted_at: str
     is_published: bool
@@ -39,12 +41,16 @@ class StatusUpdateOut(BaseModel):
 
 @router.post("", response_model=StatusUpdateOut)
 async def create_update(body: StatusBody, db: AsyncSession = Depends(get_db), user=Depends(village_only)):
-    update = StatusUpdate(village_id=user["village_id"], description=body.description)
+    update = StatusUpdate(
+        village_id=user["village_id"],
+        milestone_ref=body.milestone_ref or None,
+        description=body.description or "",
+    )
     db.add(update)
     await db.commit()
     await db.refresh(update)
     return StatusUpdateOut(
-        id=update.id, description=update.description,
+        id=update.id, milestone_ref=update.milestone_ref, description=update.description,
         submitted_at=update.submitted_at.isoformat(),
         is_published=update.is_published, media_files=[],
     )
@@ -61,7 +67,7 @@ async def list_updates(db: AsyncSession = Depends(get_db), user=Depends(village_
     updates = result.scalars().all()
     return [
         StatusUpdateOut(
-            id=u.id, description=u.description,
+            id=u.id, milestone_ref=u.milestone_ref, description=u.description,
             submitted_at=u.submitted_at.isoformat(),
             is_published=u.is_published,
             media_files=[MediaOut.model_validate(m) for m in u.media_files],
