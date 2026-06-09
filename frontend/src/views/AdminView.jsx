@@ -690,10 +690,6 @@ function ProposalsTab() {
                 </p>
               </div>
               <div>
-                <span className="text-xs text-gray-500 uppercase tracking-wide">गावाची भौगोलीक आणि सामाजीक माहिती</span>
-                <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.description || "—"}</p>
-              </div>
-              <div>
                 <span className="text-xs text-gray-500 uppercase tracking-wide">गावाची गरज</span>
                 <p className="text-gray-800 whitespace-pre-wrap mt-0.5">{selected.community_context || "—"}</p>
               </div>

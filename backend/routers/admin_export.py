@@ -201,7 +201,6 @@ EXPORT_LABELS = {
         "name":            "नाव",
         "phone":           "फोन",
         "focus_areas":     "फोकस क्षेत्रे",
-        "geo_desc":        "भौगोलिक व सामाजिक माहिती",
         "community_ctx":   "गावाची गरज",
         "key_activities":  "नियोजित प्रमुख उपक्रम",
         "reviewer_notes":  "पुनरावलोकन नोंदी",
@@ -228,7 +227,6 @@ EXPORT_LABELS = {
         "name":            "Name",
         "phone":           "Phone",
         "focus_areas":     "Focus Areas",
-        "geo_desc":        "Geographic & Social Description",
         "community_ctx":   "Village Needs / Community Context",
         "key_activities":  "Key Activities Planned",
         "reviewer_notes":  "Reviewer Notes",
@@ -300,9 +298,6 @@ async def export_proposal(
         ) or "—"
         doc.add_paragraph(labeled_areas)
         doc.add_paragraph()
-
-        _heading(doc, L["geo_desc"], level=2)
-        doc.add_paragraph(proposal.description or "—")
 
         _heading(doc, L["community_ctx"], level=2)
         doc.add_paragraph(proposal.community_context or "—")

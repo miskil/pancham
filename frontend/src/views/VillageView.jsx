@@ -129,7 +129,6 @@ const STRINGS = {
     ngoLeadPhone: "एनजीओ समन्वयक फोन (whatsapp)",
     fcraExpiry: "एफसीआरए संपण्याची तारीख",
     perCapitaIncome: "दर डोई उत्पन्न (रु.)",
-    villageDescription: "भौगोलिक आणि सामाजिक माहिती",
     villageNeeds: "गावाची गरज",
     keyActivities: "गावासाठी काय करता येईल",
     focusAreas: "फोकस क्षेत्रे",
@@ -165,7 +164,6 @@ const STRINGS = {
     ngoLeadPhone: "NGO Lead Phone (WhatsApp)",
     fcraExpiry: "FCRA Expiry Date",
     perCapitaIncome: "Per Capita Income (Rs.)",
-    villageDescription: "Geographic & Social Description",
     villageNeeds: "Village Needs / Community Context",
     keyActivities: "Key Activities Planned",
     focusAreas: "Focus Areas",
@@ -525,7 +523,6 @@ function ProposalTab({ me, onUpdate, api }) {
     ifsc_code: "",
     village_profile: {},
     focus_areas: [],
-    description: "",
     community_context: "",
     key_activities: "",
   });
@@ -561,7 +558,6 @@ function ProposalTab({ me, onUpdate, api }) {
       setForm((prev) => ({
         ...prev,
         focus_areas: p.focus_areas || (p.focus_area ? p.focus_area.split(",").map((item) => item.trim()).filter(Boolean) : []),
-        description: p.description || "",
         community_context: p.community_context || "",
         key_activities: p.key_activities || "",
       }));
@@ -582,7 +578,6 @@ function ProposalTab({ me, onUpdate, api }) {
     try {
       const body = {
         focus_areas: form.focus_areas,
-        description: form.description,
         community_context: form.community_context,
         key_activities: form.key_activities,
         submit,
@@ -833,21 +828,6 @@ function ProposalTab({ me, onUpdate, api }) {
             {(form.focus_areas || []).length > 0
               ? s.focusAreaOptions.filter((o) => (form.focus_areas || []).includes(o.code)).map((o) => o.label).join(", ")
               : <span className="text-gray-400 italic">{s.notFilledIn}</span>}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">{s.villageDescription}</label>
-        {canEdit ? (
-          <textarea
-            className="w-full border rounded px-3 py-2 text-sm h-24"
-            value={form.description}
-            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-          />
-        ) : (
-          <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2 min-h-8 whitespace-pre-wrap">
-            {form.description || <span className="text-gray-400 italic">{s.notFilledIn}</span>}
           </p>
         )}
       </div>
