@@ -872,54 +872,83 @@ function PlansTab() {
 
       <div className="md:col-span-2">
         {selected ? (
-          <div className="bg-white rounded-xl border p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-semibold">{selected.village_name}</h2>
-                <span className={`text-xs rounded px-2 py-0.5 ${frozen ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-700"}`}>
-                  {selected.status}
-                </span>
+          <div className="space-y-4">
+            {/* Action panel */}
+            <div className="bg-white rounded-xl border p-5 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h2 className="font-semibold">{selected.village_name}</h2>
+                  <span className={`text-xs rounded px-2 py-0.5 ${frozen ? "bg-gray-100 text-gray-500" : selected.status === "SUBMITTED" ? "bg-green-100 text-green-700" : selected.status === "AMENDMENT_REQUESTED" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"}`}>
+                    {selected.status === "SUBMITTED" ? "Submitted — awaiting review"
+                      : selected.status === "AMENDMENT_REQUESTED" ? "Amendment requested — awaiting village resubmission"
+                      : selected.status === "FROZEN" ? "Accepted & Frozen"
+                      : selected.status}
+                  </span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {canEdit && draftData && (
+                    <button onClick={save} disabled={saving} className="btn-sm bg-primary-700">
+                      {saving ? "Saving…" : "Save Edits"}
+                    </button>
+                  )}
+                  <ExportDriveButton onExport={() => api.exportPlan(selected.id)} />
+                </div>
               </div>
-              <div className="flex gap-2">
-                {canEdit && draftData && (
-                  <button onClick={save} disabled={saving} className="btn-sm bg-primary-700">
-                    {saving ? "Saving…" : "Save"}
-                  </button>
-                )}
-                {selected.status === "SUBMITTED" && (
-                  <>
-                    <button onClick={requestAmendment} disabled={saving} className="btn-sm bg-yellow-500">
-                      {saving ? "…" : "Request Amendment"}
+
+              {selected.status === "SUBMITTED" && (
+                <div className="border-t pt-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Review Decision</p>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Notes for village (required if sending back)</label>
+                    <textarea
+                      className="w-full border rounded px-3 py-2 text-sm h-20"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Describe what the village needs to change before resubmitting…"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={requestAmendment}
+                      disabled={saving || !notes.trim()}
+                      className="btn-sm bg-yellow-500 disabled:opacity-60"
+                    >
+                      {saving ? "…" : "Send Back for Revision"}
                     </button>
                     <button onClick={accept} disabled={saving} className="btn-sm bg-green-600">
-                      {saving ? "…" : "Accept & Freeze"}
+                      {saving ? "…" : "Accept & Freeze Baseline"}
                     </button>
-                  </>
-                )}
-                <ExportDriveButton onExport={() => api.exportPlan(selected.id)} />
-              </div>
+                  </div>
+                  {!notes.trim() && (
+                    <p className="text-xs text-gray-400">Enter notes above to enable Send Back</p>
+                  )}
+                </div>
+              )}
+
+              {selected.status === "DRAFT" && (
+                <div className="border-t pt-3 text-sm text-gray-500">
+                  Village has saved a draft but not yet submitted for review.
+                </div>
+              )}
+
+              {selected.status === "AMENDMENT_REQUESTED" && selected.reviewer_notes && (
+                <div className="border-t pt-3 bg-yellow-50 rounded p-3 text-sm text-yellow-800">
+                  <strong>Sent back with notes:</strong> {selected.reviewer_notes}
+                </div>
+              )}
+
+              {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Amendment Notes</label>
-              <textarea
-                className="w-full border rounded px-3 py-2 text-sm h-20"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes for village revision"
+
+            {/* Plan content */}
+            <div className="bg-white rounded-xl border p-5">
+              <VillageOrgReadOnly village={selected ? villageMeta[selected.village_id] : null} />
+              <PlanMilestonesViewer
+                plan={{ plan_data: draftData ?? selected.plan_data }}
+                readonly={frozen}
+                onChange={setDraftData}
               />
             </div>
-            {selected.reviewer_notes && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
-                <strong>Latest amendment notes:</strong> {selected.reviewer_notes}
-              </div>
-            )}
-            <VillageOrgReadOnly village={selected ? villageMeta[selected.village_id] : null} />
-            {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
-            <PlanMilestonesViewer
-              plan={{ plan_data: draftData ?? selected.plan_data }}
-              readonly={frozen}
-              onChange={setDraftData}
-            />
           </div>
         ) : <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Select a plan.</div>}
       </div>
