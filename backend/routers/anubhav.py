@@ -5,11 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-import os
-import shutil
-import uuid
-
 from ..auth import require_role
+from ..utils.storage import save_upload
 from ..db import get_db
 from ..models.admin_user import AdminUser
 from ..models.anubhav import AnubhavMediaFile, AnubhavPost
@@ -176,17 +173,7 @@ async def upload_post_media(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image uploads are allowed")
 
-    storage_url = os.getenv("STORAGE_URL", "")
-    filename = f"{uuid.uuid4()}_{file.filename}"
-    if storage_url:
-        file_url = f"{storage_url}/{filename}"
-    else:
-        upload_dir = "uploads/anubhav"
-        os.makedirs(upload_dir, exist_ok=True)
-        dest = os.path.join(upload_dir, filename)
-        with open(dest, "wb") as handle:
-            shutil.copyfileobj(file.file, handle)
-        file_url = f"/uploads/anubhav/{filename}"
+    file_url = save_upload(file.file, file.filename, "anubhav")
 
     media = AnubhavMediaFile(
         anubhav_post_id=post_id,

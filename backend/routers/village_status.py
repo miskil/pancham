@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from ..db import get_db
 from ..models.status_update import StatusUpdate, MediaFile
 from ..auth import require_role
-import uuid, os
+from ..utils.storage import save_upload
 
 router = APIRouter(prefix="/village/status", tags=["village-status"])
 village_only = require_role("VILLAGE")
@@ -88,20 +88,8 @@ async def upload_media(
     if not update or update.village_id != user["village_id"]:
         raise HTTPException(status_code=404, detail="Update not found")
 
-    storage_url = os.getenv("STORAGE_URL", "")
-    filename = f"{uuid.uuid4()}_{file.filename}"
     media_type = "VIDEO" if file.content_type and file.content_type.startswith("video") else "PHOTO"
-
-    if storage_url:
-        file_url = f"{storage_url}/{filename}"
-    else:
-        upload_dir = "uploads/media"
-        os.makedirs(upload_dir, exist_ok=True)
-        import shutil
-        dest = os.path.join(upload_dir, filename)
-        with open(dest, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-        file_url = f"/uploads/media/{filename}"
+    file_url = save_upload(file.file, file.filename, "media")
     media = MediaFile(status_update_id=update_id, media_type=media_type, file_url=file_url)
     db.add(media)
     await db.commit()

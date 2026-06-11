@@ -49,6 +49,14 @@ export const exportPlan = (id) => download(`/admin/export/plans/${id}`, "POST");
 export const publishUpdate = (id) => patch(`/admin/status-updates/${id}/publish`);
 export const unpublishUpdate = (id) => patch(`/admin/status-updates/${id}/unpublish`);
 
+export const getStorageStats = () => get("/admin/storage/stats");
+export const downloadStorageArchive = (villageId, types) => {
+  const params = new URLSearchParams();
+  if (villageId) params.set("village_id", villageId);
+  if (types) params.set("types", types);
+  return download(`/admin/storage/archive?${params}`, "GET");
+};
+
 export const listAnubhavPosts = () => get("/anubhav/posts");
 export const createAnubhavPost = (body) => post("/anubhav/posts", body);
 export const updateAnubhavPost = (id, body) => patch(`/anubhav/posts/${id}`, body);

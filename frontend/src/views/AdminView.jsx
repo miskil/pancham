@@ -180,6 +180,8 @@ function DashboardTab() {
         </div>
       </div>
 
+      <StoragePanel villages={villages} />
+
       <div className="bg-white rounded-xl border p-5">
         <h2 className="font-semibold text-gray-700 mb-3">Progress by Village</h2>
         {villages.length === 0 ? (
@@ -203,6 +205,120 @@ function DashboardTab() {
             })}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+}
+
+function StoragePanel({ villages }) {
+  const [stats, setStats] = useState(null);
+  const [archiveVillage, setArchiveVillage] = useState("");
+  const [archiveTypes, setArchiveTypes] = useState({ media: true, evidence: true, anubhav: true });
+  const [archiveState, setArchiveState] = useState("idle");
+
+  useEffect(() => {
+    api.getStorageStats().then(setStats).catch(() => {});
+  }, []);
+
+  async function handleArchive() {
+    setArchiveState("loading");
+    const types = Object.entries(archiveTypes).filter(([, v]) => v).map(([k]) => k).join(",");
+    try {
+      const { blob, filename } = await api.downloadStorageArchive(archiveVillage || null, types);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setArchiveState("done");
+      setTimeout(() => setArchiveState("idle"), 3000);
+    } catch (err) {
+      setArchiveState("error");
+      alert("Archive failed: " + err.message);
+    }
+  }
+
+  const usedPct = stats ? Math.round((stats.used_bytes / stats.total_bytes) * 100) : 0;
+
+  return (
+    <div className="bg-white rounded-xl border p-5 space-y-5">
+      <h2 className="font-semibold text-gray-700">Storage</h2>
+
+      {stats ? (
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{formatBytes(stats.used_bytes)} used</span>
+              <span>{formatBytes(stats.free_bytes)} free of {formatBytes(stats.total_bytes)}</span>
+            </div>
+            <div className="h-2 rounded bg-gray-100 overflow-hidden">
+              <div
+                className={`h-full transition-all ${usedPct > 85 ? "bg-red-500" : usedPct > 65 ? "bg-amber-400" : "bg-primary-600"}`}
+                style={{ width: `${usedPct}%` }}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {stats.folders.map((f) => (
+              <div key={f.name} className="rounded-lg bg-gray-50 border px-3 py-2 text-xs">
+                <p className="font-medium text-gray-700 capitalize">{f.name}</p>
+                <p className="text-gray-500">{f.file_count} files</p>
+                <p className="text-gray-400">{formatBytes(f.size_bytes)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">Loading storage stats…</p>
+      )}
+
+      <div className="border-t pt-4 space-y-3">
+        <h3 className="text-sm font-medium text-gray-600">Archive to local drive</h3>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Village (optional — leave blank for all)</label>
+          <select
+            value={archiveVillage}
+            onChange={(e) => setArchiveVillage(e.target.value)}
+            className="input-field text-sm"
+          >
+            <option value="">All villages</option>
+            {(villages || []).map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Asset types to include</p>
+          <div className="flex gap-4 text-sm">
+            {["media", "evidence", "anubhav"].map((t) => (
+              <label key={t} className="flex items-center gap-1.5 text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={archiveTypes[t]}
+                  onChange={(e) => setArchiveTypes((prev) => ({ ...prev, [t]: e.target.checked }))}
+                />
+                <span className="capitalize">{t}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={handleArchive}
+          disabled={archiveState === "loading" || !Object.values(archiveTypes).some(Boolean)}
+          className="btn-sm bg-gray-700 disabled:opacity-50"
+        >
+          {archiveState === "loading" ? "Preparing ZIP…" : archiveState === "done" ? "Downloaded" : "Download ZIP"}
+        </button>
       </div>
     </div>
   );

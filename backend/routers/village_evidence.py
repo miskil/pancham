@@ -5,13 +5,12 @@ from sqlalchemy import select
 from ..db import get_db
 from ..models.evidence import SupportEvidence
 from ..auth import require_role
-import uuid, os, shutil
+from ..utils.storage import save_upload
 
 router = APIRouter(prefix="/village/evidence", tags=["village-evidence"])
 village_only = require_role("VILLAGE")
 
 DOC_TYPES = {"GRAMSABHA", "PANCHAYAT", "MOU", "GPDP", "OTHER"}
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads/evidence")
 
 
 class EvidenceOut(BaseModel):
@@ -47,17 +46,7 @@ async def upload_evidence(
     if doc_type not in DOC_TYPES:
         raise HTTPException(status_code=400, detail=f"doc_type must be one of {DOC_TYPES}")
 
-    storage_url = os.getenv("STORAGE_URL", "")
-    safe_name = f"{uuid.uuid4()}_{file.filename}"
-
-    if storage_url:
-        file_url = f"{storage_url}/{safe_name}"
-    else:
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        dest = os.path.join(UPLOAD_DIR, safe_name)
-        with open(dest, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-        file_url = f"/uploads/evidence/{safe_name}"
+    file_url = save_upload(file.file, file.filename, "evidence")
 
     ev = SupportEvidence(
         village_id=user["village_id"],

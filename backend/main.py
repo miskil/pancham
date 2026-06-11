@@ -8,7 +8,7 @@ from .db import SessionLocal
 from .models.admin_user import AdminUser
 from .auth import hash_password
 from .config import settings
-from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users, admin_maintenance
+from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users, admin_maintenance, admin_storage
 from .routers import village_me, village_proposal, village_plan, village_status, village_evidence
 from .routers import threads, channels, donor, org, funding, anubhav
 
@@ -65,14 +65,16 @@ app.add_middleware(
     expose_headers=["Content-Disposition"],
 )
 
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+_upload_root = os.getenv("UPLOAD_DIR", "uploads")
+os.makedirs(_upload_root, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_upload_root), name="uploads")
 
 for r in [
     auth.router,
     admin_onboard.router,
     admin_users.router,
     admin_maintenance.router,
+    admin_storage.router,
     admin_proposals.router,
     admin_plans.router,
     admin_status.router,
