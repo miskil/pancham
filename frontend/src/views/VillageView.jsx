@@ -1692,8 +1692,19 @@ function StatusTab({ me, api }) {
       if (file) {
         const fd = new FormData();
         fd.append("file", file);
-        const media = await api.uploadMedia(u.id, fd);
-        u.media_files = [media];
+        try {
+          const media = await api.uploadMedia(u.id, fd);
+          u.media_files = [media];
+        } catch (uploadErr) {
+          // Post was saved — surface the media failure clearly
+          setUpdates((prev) => [u, ...prev]);
+          setDescription("");
+          setNotes("");
+          setFile(null);
+          setMilestoneRef("__other__");
+          setError(`Post saved, but media upload failed: ${uploadErr.message}`);
+          return;
+        }
       }
       setUpdates((prev) => [u, ...prev]);
       setDescription("");

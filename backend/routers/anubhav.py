@@ -173,7 +173,7 @@ async def upload_post_media(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image uploads are allowed")
 
-    file_url = save_upload(file.file, file.filename, "anubhav")
+    file_url = await save_upload(file.file, file.filename, "anubhav")
 
     media = AnubhavMediaFile(
         anubhav_post_id=post_id,

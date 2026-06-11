@@ -89,7 +89,7 @@ async def upload_media(
         raise HTTPException(status_code=404, detail="Update not found")
 
     media_type = "VIDEO" if file.content_type and file.content_type.startswith("video") else "PHOTO"
-    file_url = save_upload(file.file, file.filename, "media")
+    file_url = await save_upload(file.file, file.filename, "media")
     media = MediaFile(status_update_id=update_id, media_type=media_type, file_url=file_url)
     db.add(media)
     await db.commit()

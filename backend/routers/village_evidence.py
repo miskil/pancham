@@ -46,7 +46,7 @@ async def upload_evidence(
     if doc_type not in DOC_TYPES:
         raise HTTPException(status_code=400, detail=f"doc_type must be one of {DOC_TYPES}")
 
-    file_url = save_upload(file.file, file.filename, "evidence")
+    file_url = await save_upload(file.file, file.filename, "evidence")
 
     ev = SupportEvidence(
         village_id=user["village_id"],
