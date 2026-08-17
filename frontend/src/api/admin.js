@@ -7,6 +7,14 @@ export const deactivateVillage = (id) => patch(`/admin/villages/${id}/deactivate
 export const getVillageEvidence = (id) => get(`/admin/villages/${id}/evidence`);
 export const getVillageOrg = (id) => get(`/admin/villages/${id}/org`);
 export const updateVillageOrg = (id, body) => patch(`/admin/villages/${id}/org`, body);
+export const listVillageMou = (villageId) => get(`/admin/villages/${villageId}/mou`);
+export const createVillageMou = (villageId, body) => post(`/admin/villages/${villageId}/mou`, body);
+export const updateVillageMou = (villageId, mouId, body) => patch(`/admin/villages/${villageId}/mou/${mouId}`, body);
+export const deleteVillageMou = (villageId, mouId) => del(`/admin/villages/${villageId}/mou/${mouId}`);
+export const uploadMouDraftDocument = (villageId, mouId, formData) => postForm(`/admin/villages/${villageId}/mou/${mouId}/draft-document`, formData);
+export const downloadMouDraftDocument = (villageId, mouId) => download(`/admin/villages/${villageId}/mou/${mouId}/draft-document`, "GET");
+export const downloadMouSignedDocument = (villageId, mouId) => download(`/admin/villages/${villageId}/mou/${mouId}/signed-document`, "GET");
+
 export const listVillageFundingRounds = (id) => get(`/admin/villages/${id}/funding-rounds`);
 export const createVillageFundingRound = (id, body) => post(`/admin/villages/${id}/funding-rounds`, body);
 export const updateVillageFundingRound = (villageId, roundId, body) => patch(`/admin/villages/${villageId}/funding-rounds/${roundId}`, body);

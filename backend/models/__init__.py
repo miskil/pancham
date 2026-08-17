@@ -8,6 +8,7 @@ from .status_update import StatusUpdate, MediaFile
 from .anubhav import AnubhavPost, AnubhavMediaFile
 from .thread import UpdateThread, VillageChannel
 from .funding import FundingRound
+from .mou import Mou
 
 __all__ = [
     "Village",
@@ -22,4 +23,5 @@ __all__ = [
     "VillageChannel",
     "FundingRound",
     "PasswordResetToken",
+    "Mou",
 ]

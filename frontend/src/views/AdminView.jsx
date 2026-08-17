@@ -9,7 +9,8 @@ import { RichText } from "../components/RichText";
 import { formatEnglishNumber, parseLocaleNumber } from "../utils/numbers";
 import { VillageView, VILLAGE_PROFILE_SECTIONS } from "./VillageView";
 
-const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "Plans", "Status", "Funding", "Users", "Anubhav"];
+const TABS = ["Dashboard", "Onboard", "Proposals", "Org", "MoU", "Plans", "Status", "Funding", "Users", "Anubhav"];
+const MOU_STATUSES = ["DRAFT", "SENT", "SIGNED", "EXPIRED", "TERMINATED"];
 const VILLAGE_VIEW_ENABLED = import.meta.env.VITE_ADMIN_VILLAGE_VIEW === "true";
 const STAGE_PROGRESS = {
   PROPOSAL: 25,
@@ -99,6 +100,7 @@ export function AdminView() {
         {tab === "Status" && <StatusTab />}
         {tab === "Funding" && <FundingTab />}
         {tab === "Org" && <OrgTab />}
+        {tab === "MoU" && <MouTab />}
         {tab === "Users" && <AdminUsersTab />}
         {tab === "Anubhav" && <AnubhavTab />}
       </div>
@@ -1307,6 +1309,238 @@ function OrgTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function MouTab() {
+  const [villages, setVillages] = useState([]);
+  const [villageId, setVillageId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [savingId, setSavingId] = useState(null);
+  const [uploadingId, setUploadingId] = useState(null);
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    api.listVillages().then((data) => {
+      setVillages(data);
+      if (data.length) setVillageId(data[0].id);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!villageId) return;
+    setLoading(true);
+    api.listVillageMou(villageId).then((data) => {
+      setRecords(data.map((item) => ({
+        ...item,
+        terms: item.terms || "",
+        admin_notes: item.admin_notes || "",
+        expiry_date: item.expiry_date || "",
+        sent_date: item.sent_date || "",
+        signed_date: item.signed_date || "",
+      })));
+    }).catch(() => setRecords([])).finally(() => setLoading(false));
+  }, [villageId]);
+
+  function updateRecord(id, key, value) {
+    setRecords((prev) => prev.map((item) => item.id === id ? { ...item, [key]: value } : item));
+  }
+
+  async function addMou() {
+    if (!villageId) return;
+    setCreating(true);
+    try {
+      const created = await api.createVillageMou(villageId, {});
+      setRecords((prev) => [...prev, { ...created, terms: "", admin_notes: "", expiry_date: "", sent_date: "", signed_date: "" }]);
+    } catch (err) { alert(err.message); }
+    finally { setCreating(false); }
+  }
+
+  async function saveMou(id) {
+    const current = records.find((item) => item.id === id);
+    if (!current) return;
+    setSavingId(id);
+    try {
+      const updated = await api.updateVillageMou(villageId, id, {
+        terms: current.terms,
+        admin_notes: current.admin_notes,
+        expiry_date: current.expiry_date || null,
+        status: current.status,
+      });
+      setRecords((prev) => prev.map((item) => item.id === id ? {
+        ...updated,
+        terms: updated.terms || "",
+        admin_notes: updated.admin_notes || "",
+        expiry_date: updated.expiry_date || "",
+        sent_date: updated.sent_date || "",
+        signed_date: updated.signed_date || "",
+      } : item));
+    } catch (err) { alert(err.message); }
+    finally { setSavingId(null); }
+  }
+
+  async function deleteMou(id) {
+    if (!window.confirm("Delete this draft MoU? This cannot be undone.")) return;
+    try {
+      await api.deleteVillageMou(villageId, id);
+      setRecords((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) { alert(err.message); }
+  }
+
+  async function uploadDraft(id, file) {
+    setUploadingId(id);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const updated = await api.uploadMouDraftDocument(villageId, id, fd);
+      setRecords((prev) => prev.map((item) => item.id === id ? { ...item, draft_document_filename: updated.draft_document_filename } : item));
+    } catch (err) { alert(err.message); }
+    finally { setUploadingId(null); }
+  }
+
+  async function download(fn, filenameFallback) {
+    try {
+      const { blob, filename } = await fn();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || filenameFallback;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) { alert("Download failed: " + err.message); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <label className="text-sm font-medium text-gray-600 whitespace-nowrap">Village</label>
+        <select className="flex-1 border rounded px-3 py-2 text-sm" value={villageId} onChange={(e) => setVillageId(e.target.value)}>
+          {villages.map((v) => (
+            <option key={v.id} value={v.id}>{v.name} ({v.district})</option>
+          ))}
+        </select>
+        <button onClick={addMou} disabled={creating || !villageId} className="btn-sm bg-primary-700 disabled:opacity-60 shrink-0">
+          {creating ? "Adding..." : "+ New MoU"}
+        </button>
+      </div>
+
+      {loading && <p className="text-sm text-gray-400">Loading MoU records...</p>}
+      {!loading && records.length === 0 && <p className="text-sm text-gray-400">No MoU records yet for this village.</p>}
+
+      {!loading && records.map((mou) => (
+        <div key={mou.id} className="bg-white rounded-xl border p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</span>
+              <select
+                className="border rounded px-2 py-1.5 text-sm"
+                value={mou.status}
+                onChange={(e) => updateRecord(mou.id, "status", e.target.value)}
+              >
+                {MOU_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              {mou.status === "DRAFT" && (
+                <button onClick={() => deleteMou(mou.id)} className="btn-sm bg-red-600 hover:bg-red-700 text-white text-xs">Delete</button>
+              )}
+              <button onClick={() => saveMou(mou.id)} disabled={savingId === mou.id} className="btn-sm bg-primary-700 disabled:opacity-60 text-xs">
+                {savingId === mou.id ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Terms</label>
+            <textarea
+              className="w-full border rounded px-3 py-2 text-sm h-28"
+              value={mou.terms}
+              onChange={(e) => updateRecord(mou.id, "terms", e.target.value)}
+              placeholder="Summarize the agreement terms for this village"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Sent Date</label>
+              <input type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={mou.sent_date} readOnly />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Signed Date</label>
+              <input type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={mou.signed_date} readOnly />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date</label>
+              <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={mou.expiry_date} onChange={(e) => updateRecord(mou.id, "expiry_date", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-lg border bg-gray-50 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Draft Document (from Admin)</p>
+              {mou.draft_document_filename ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-700 truncate">{mou.draft_document_filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => download(() => api.downloadMouDraftDocument(villageId, mou.id), mou.draft_document_filename)}
+                    className="btn-sm bg-gray-500 shrink-0 text-xs"
+                  >
+                    Download
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No draft document uploaded.</p>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="hidden"
+                  disabled={uploadingId === mou.id}
+                  onChange={(e) => { if (e.target.files?.[0]) uploadDraft(mou.id, e.target.files[0]); }}
+                />
+                <span className={`btn-sm ${uploadingId === mou.id ? "bg-gray-400" : "bg-primary-700"} text-xs`}>
+                  {uploadingId === mou.id ? "Uploading…" : mou.draft_document_filename ? "Replace Draft" : "Upload Draft"}
+                </span>
+              </label>
+            </div>
+
+            <div className="rounded-lg border bg-gray-50 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Signed Document (from Village)</p>
+              {mou.signed_document_filename ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-700 truncate">{mou.signed_document_filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => download(() => api.downloadMouSignedDocument(villageId, mou.id), mou.signed_document_filename)}
+                    className="btn-sm bg-gray-500 shrink-0 text-xs"
+                  >
+                    Download
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">Village has not uploaded a signed copy yet.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Admin Notes</label>
+              <textarea className="w-full border rounded px-3 py-2 text-sm h-20" value={mou.admin_notes} onChange={(e) => updateRecord(mou.id, "admin_notes", e.target.value)} placeholder="Admin-only note" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Village Notes</label>
+              <textarea className="w-full border rounded px-3 py-2 text-sm h-20 bg-gray-50" value={mou.village_notes || ""} readOnly placeholder="Village note will appear here" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

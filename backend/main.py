@@ -8,8 +8,8 @@ from .db import SessionLocal
 from .models.admin_user import AdminUser
 from .auth import hash_password
 from .config import settings
-from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users, admin_maintenance, admin_storage
-from .routers import village_me, village_proposal, village_plan, village_status, village_evidence
+from .routers import auth, admin_onboard, admin_proposals, admin_plans, admin_status, admin_export, admin_users, admin_maintenance, admin_storage, admin_mou
+from .routers import village_me, village_proposal, village_plan, village_status, village_evidence, village_mou
 from .routers import threads, channels, donor, org, funding, anubhav
 
 app = FastAPI(title="Pancham API")
@@ -79,11 +79,13 @@ for r in [
     admin_plans.router,
     admin_status.router,
     admin_export.router,
+    admin_mou.router,
     village_me.router,
     village_proposal.router,
     village_plan.router,
     village_status.router,
     village_evidence.router,
+    village_mou.router,
     org.router,
     funding.router,
     anubhav.router,

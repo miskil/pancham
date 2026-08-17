@@ -43,3 +43,4 @@ class Village(Base):
     funding_rounds: Mapped[list["FundingRound"]] = relationship("FundingRound", back_populates="village", order_by="FundingRound.round_number")  # noqa: F821
     status_updates: Mapped[list["StatusUpdate"]] = relationship("StatusUpdate", back_populates="village")  # noqa: F821
     channel_messages: Mapped[list["VillageChannel"]] = relationship("VillageChannel", back_populates="village")  # noqa: F821
+    mous: Mapped[list["Mou"]] = relationship("Mou", back_populates="village", order_by="Mou.created_at")  # noqa: F821

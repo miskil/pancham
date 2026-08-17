@@ -105,14 +105,14 @@ export const VILLAGE_PROFILE_SECTIONS = [
   ]},
 ];
 
-const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "Plan", "Funding", "Status", "Anubhav"];
+const TABS = ["Dashboard", "Proposal", "Evidence", "Org", "MoU", "Plan", "Funding", "Status", "Anubhav"];
 
 const LangContext = createContext("mr");
 const useLang = () => useContext(LangContext);
 
 const STRINGS = {
   mr: {
-    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", Evidence: "पुरावा", Org: "संघटन", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
+    tabs: { Dashboard: "डॅशबोर्ड", Proposal: "प्रस्ताव", Evidence: "पुरावा", Org: "संघटन", MoU: "सामंजस्य करार", Plan: "योजना", Funding: "निधी", Status: "प्रगती", Anubhav: "अनुभव" },
     planLabels: { milestone: "महत्वाचा टप्पा", impact: "परिणाम", activity: "कार्य", addActivity: "+ कार्य जोडा", addMilestone: "+ महत्वाचा टप्पा जोडा" },
     villageProposal: "गावाचा प्रस्ताव",
     villageInfo: "गावाची माहिती",
@@ -147,7 +147,7 @@ const STRINGS = {
     readOnly: "फक्त वाचा",
   },
   en: {
-    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", Evidence: "Evidence", Org: "Org", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
+    tabs: { Dashboard: "Dashboard", Proposal: "Proposal", Evidence: "Evidence", Org: "Org", MoU: "MoU", Plan: "Plan", Funding: "Funding", Status: "Status", Anubhav: "Anubhav" },
     planLabels: { milestone: "Milestone", impact: "Impact", activity: "Activity", addActivity: "+ Add Activity", addMilestone: "+ Add Milestone" },
     villageProposal: "Village Proposal",
     villageInfo: "Village Information",
@@ -247,6 +247,15 @@ function makeApi(token) {
       return fetch(`${import.meta.env.VITE_API_URL || "/api"}/village/status/${updateId}/media`, { method: "POST", body: formData, headers })
         .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
     },
+    listMou: () => f("/village/mou"),
+    updateMouNotes: (mouId, b) => f(`/village/mou/${mouId}`, { method: "PATCH", body: JSON.stringify(b) }),
+    uploadMouSignedDocument: (mouId, formData) => {
+      const headers = { Authorization: `Bearer ${token}` };
+      return fetch(`${import.meta.env.VITE_API_URL || "/api"}/village/mou/${mouId}/signed-document`, { method: "POST", body: formData, headers })
+        .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(new Error(e.detail))));
+    },
+    downloadMouDraftDocument: (mouId) => dl(`/village/mou/${mouId}/draft-document`, "GET"),
+    downloadMouSignedDocument: (mouId) => dl(`/village/mou/${mouId}/signed-document`, "GET"),
     listEvidence: () => f("/village/evidence"),
     uploadEvidence: (formData) => {
       const headers = { Authorization: `Bearer ${token}` };
@@ -381,6 +390,7 @@ export function VillageView({ previewToken } = {}) {
         {tab === "Proposal" && <ProposalTab me={me} onUpdate={setMe} api={api} />}
 {tab === "Evidence" && <EvidenceTab api={api} />}
         {tab === "Org" && <OrgTab me={me} onUpdate={setMe} api={api} />}
+        {tab === "MoU" && <MouTab me={me} api={api} />}
         {tab === "Funding" && <FundingTab api={api} me={me} />}
         {tab === "Plan" && proposalAccepted && <ProjectTab me={me} api={api} />}
         {tab === "Status" && <StatusTab me={me} api={api} />}
@@ -1283,6 +1293,156 @@ function FundingTab({ api, me }) {
             <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-gray-50" value={round.admin_funding_note} readOnly placeholder="Admin note will appear here" />
             <label className="block text-xs font-medium text-gray-600 mb-1">Village Funding Note</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm h-24 bg-white" value={round.village_funding_note} onChange={(e) => updateRound(round.id, "village_funding_note", e.target.value)} placeholder="Village-only note" readOnly={!canEditFunding} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MouTab({ api, me }) {
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+  const [uploadingId, setUploadingId] = useState(null);
+  const [records, setRecords] = useState([]);
+  const canSign = (me?.current_user_type || "").toUpperCase() === "NGO";
+
+  useEffect(() => {
+    setLoadError(null);
+    api.listMou().then((data) => {
+      setRecords(data.map((item) => ({ ...item, village_notes: item.village_notes || "" })));
+    }).catch((err) => setLoadError(err.message || "Failed to load MoU records")).finally(() => setLoading(false));
+  }, [api]);
+
+  function updateNotes(id, value) {
+    setRecords((prev) => prev.map((item) => item.id === id ? { ...item, village_notes: value } : item));
+  }
+
+  async function saveNotes(id) {
+    const current = records.find((item) => item.id === id);
+    if (!current) return;
+    setSavingId(id);
+    try {
+      const updated = await api.updateMouNotes(id, { village_notes: current.village_notes });
+      setRecords((prev) => prev.map((item) => item.id === id ? { ...item, village_notes: updated.village_notes || "" } : item));
+    } catch (err) { alert(err.message); }
+    finally { setSavingId(null); }
+  }
+
+  async function uploadSigned(id, file) {
+    setUploadingId(id);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const updated = await api.uploadMouSignedDocument(id, fd);
+      setRecords((prev) => prev.map((item) => item.id === id ? { ...item, signed_document_filename: updated.signed_document_filename, status: updated.status, signed_date: updated.signed_date } : item));
+    } catch (err) { alert(err.message); }
+    finally { setUploadingId(null); }
+  }
+
+  async function download(fn, filenameFallback) {
+    try {
+      const { blob, filename } = await fn();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || filenameFallback;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) { alert("Download failed: " + err.message); }
+  }
+
+  if (loading) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-gray-400">Loading MoU records...</div>;
+  }
+  if (loadError) {
+    return <div className="bg-white rounded-xl border p-5 text-sm text-red-600">Could not load MoU records: {loadError}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {!canSign && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Only the NGO lead can upload a signed MoU document.
+        </div>
+      )}
+      {records.length === 0 && <p className="text-sm text-gray-400 bg-white rounded-xl border p-5">No MoU records yet. Your admin will share one here.</p>}
+
+      {records.map((mou) => (
+        <div key={mou.id} className="bg-white rounded-xl border p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-100">{mou.status}</span>
+            {mou.expiry_date && <span className="text-xs text-gray-500">Expires {mou.expiry_date}</span>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Terms</label>
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-28 bg-gray-50" value={mou.terms || ""} readOnly placeholder="Admin has not added terms yet" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-lg border bg-gray-50 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Draft Document (from Admin)</p>
+              {mou.draft_document_filename ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-700 truncate">{mou.draft_document_filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => download(() => api.downloadMouDraftDocument(mou.id), mou.draft_document_filename)}
+                    className="btn-sm bg-gray-500 shrink-0 text-xs"
+                  >
+                    Download
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No draft document yet.</p>
+              )}
+            </div>
+
+            <div className="rounded-lg border bg-gray-50 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Signed Document (from you)</p>
+              {mou.signed_document_filename ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-700 truncate">{mou.signed_document_filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => download(() => api.downloadMouSignedDocument(mou.id), mou.signed_document_filename)}
+                    className="btn-sm bg-gray-500 shrink-0 text-xs"
+                  >
+                    Download
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">Not uploaded yet.</p>
+              )}
+              {canSign && !["EXPIRED", "TERMINATED"].includes(mou.status) && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    className="hidden"
+                    disabled={uploadingId === mou.id}
+                    onChange={(e) => { if (e.target.files?.[0]) uploadSigned(mou.id, e.target.files[0]); }}
+                  />
+                  <span className={`btn-sm ${uploadingId === mou.id ? "bg-gray-400" : "bg-primary-700"} text-xs`}>
+                    {uploadingId === mou.id ? "Uploading…" : mou.signed_document_filename ? "Replace Signed Copy" : "Upload Signed Copy"}
+                  </span>
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-600">Village Notes</label>
+              <button onClick={() => saveNotes(mou.id)} disabled={savingId === mou.id} className="btn-sm bg-primary-700 disabled:opacity-60 text-xs">
+                {savingId === mou.id ? "Saving..." : "Save Notes"}
+              </button>
+            </div>
+            <textarea className="w-full border rounded px-3 py-2 text-sm h-20" value={mou.village_notes} onChange={(e) => updateNotes(mou.id, e.target.value)} placeholder="Questions or notes for the admin" />
           </div>
         </div>
       ))}
