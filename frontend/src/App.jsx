@@ -25,6 +25,9 @@ export default function App() {
 
   if (!ready) return null;
 
+  const hasResetToken = new URLSearchParams(window.location.search).has("reset_token");
+
+  if (hasResetToken) return <LoginView onLogin={handleLogin} />;
   if (!user) return <LoginView onLogin={handleLogin} />;
   if (mustChangePassword()) return <LoginView onLogin={handleLogin} />;
 

@@ -35,12 +35,17 @@ class VillageUserOut(BaseModel):
     display_name: str | None
     user_type: str
     login_username: str
+    email: str | None = None
     is_active: bool
     must_change_password: bool
     temp_password: str | None = None
 
     class Config:
         from_attributes = True
+
+
+class UpdateVillageUserEmailRequest(BaseModel):
+    email: str | None = None
 
 
 class VillageOut(BaseModel):
@@ -171,6 +176,7 @@ class AddVillageUserRequest(BaseModel):
     display_name: str | None = None
     login_username: str | None = None  # auto-generated if omitted
     user_type: str = "VDC"  # ADMIN | NGO | VDC
+    email: str | None = None
 
 
 @router.post("/{village_id}/users", response_model=VillageUserOut)
@@ -190,11 +196,18 @@ async def add_village_user(village_id: str, body: AddVillageUserRequest, db: Asy
     if normalized_user_type not in {"ADMIN", "NGO", "VDC"}:
         raise HTTPException(status_code=400, detail="user_type must be one of: ADMIN, NGO, VDC")
 
+    email = (body.email or "").strip() or None
+    if email:
+        existing_email = await db.execute(select(VillageUser).where(VillageUser.email == email))
+        if existing_email.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Email already in use")
+
     vu = VillageUser(
         village_id=village_id,
         display_name=body.display_name,
         user_type=normalized_user_type,
         login_username=username,
+        email=email,
         login_password_hash=hash_password(temp_password),
         must_change_password=True,
     )
@@ -206,10 +219,34 @@ async def add_village_user(village_id: str, body: AddVillageUserRequest, db: Asy
         display_name=vu.display_name,
         user_type=vu.user_type,
         login_username=vu.login_username,
+        email=vu.email,
         is_active=vu.is_active,
         must_change_password=vu.must_change_password,
         temp_password=temp_password,
     )
+
+
+@router.patch("/{village_id}/users/{user_id}/email", response_model=VillageUserOut)
+async def update_village_user_email(village_id: str, user_id: str, body: UpdateVillageUserEmailRequest, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    result = await db.execute(
+        select(VillageUser).where(VillageUser.id == user_id, VillageUser.village_id == village_id)
+    )
+    vu = result.scalar_one_or_none()
+    if not vu:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    email = (body.email or "").strip() or None
+    if email:
+        existing_email = await db.execute(
+            select(VillageUser).where(VillageUser.email == email, VillageUser.id != user_id)
+        )
+        if existing_email.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Email already in use")
+
+    vu.email = email
+    await db.commit()
+    await db.refresh(vu)
+    return vu
 
 
 @router.patch("/{village_id}/users/{user_id}/deactivate")

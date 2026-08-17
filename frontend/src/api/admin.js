@@ -18,12 +18,14 @@ export const listVillageUsers = (villageId) => get(`/admin/villages/${villageId}
 export const addVillageUser = (villageId, body) => post(`/admin/villages/${villageId}/users`, body);
 export const deactivateVillageUser = (villageId, userId) => patch(`/admin/villages/${villageId}/users/${userId}/deactivate`);
 export const resetVillageUserPassword = (villageId, userId) => patch(`/admin/villages/${villageId}/users/${userId}/reset-password`);
+export const updateVillageUserEmail = (villageId, userId, email) => patch(`/admin/villages/${villageId}/users/${userId}/email`, { email });
 
 // Admin users
 export const listAdminUsers = () => get("/admin/users");
 export const createAdminUser = (body) => post("/admin/users", body);
 export const deactivateAdminUser = (userId) => patch(`/admin/users/${userId}/deactivate`);
 export const resetAdminPassword = (userId) => patch(`/admin/users/${userId}/reset-password`);
+export const updateAdminEmail = (userId, email) => patch(`/admin/users/${userId}/email`, { email });
 
 export const listProposals = () => get("/admin/proposals");
 export const getProposal = (id) => get(`/admin/proposals/${id}`);

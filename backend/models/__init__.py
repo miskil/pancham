@@ -1,6 +1,7 @@
 from .village import Village
 from .village_user import VillageUser
 from .admin_user import AdminUser
+from .password_reset_token import PasswordResetToken
 from .proposal import Proposal, ProposalAmendment
 from .plan import ProjectPlan
 from .status_update import StatusUpdate, MediaFile
@@ -20,4 +21,5 @@ __all__ = [
     "UpdateThread",
     "VillageChannel",
     "FundingRound",
+    "PasswordResetToken",
 ]

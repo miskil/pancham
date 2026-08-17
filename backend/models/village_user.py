@@ -13,6 +13,7 @@ class VillageUser(Base):
     display_name: Mapped[str] = mapped_column(String, nullable=True)
     user_type: Mapped[str] = mapped_column(String, nullable=False, default="VDC")
     login_username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True)
     login_password_hash: Mapped[str] = mapped_column(String, nullable=False)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

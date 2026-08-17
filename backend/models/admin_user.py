@@ -11,6 +11,7 @@ class AdminUser(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     display_name: Mapped[str] = mapped_column(String, nullable=True)
     login_username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True)
     login_password_hash: Mapped[str] = mapped_column(String, nullable=False)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

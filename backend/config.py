@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     bhau_enabled: bool = False
     enable_reset_tables_endpoint: bool = False
 
+    frontend_url: str = "https://pancham.up.railway.app"
+    password_reset_token_expire_minutes: int = 30
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "no-reply@pancham.app"
+    smtp_use_tls: bool = True
+
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:

@@ -15,6 +15,7 @@ class AdminUserOut(BaseModel):
     id: str
     display_name: str | None
     login_username: str
+    email: str | None = None
     is_active: bool
     must_change_password: bool
     temp_password: str | None = None
@@ -26,6 +27,11 @@ class AdminUserOut(BaseModel):
 class CreateAdminUserRequest(BaseModel):
     login_username: str
     display_name: str | None = None
+    email: str | None = None
+
+
+class UpdateAdminEmailRequest(BaseModel):
+    email: str | None = None
 
 
 @router.get("", response_model=list[AdminUserOut])
@@ -40,10 +46,17 @@ async def create_admin_user(body: CreateAdminUserRequest, db: AsyncSession = Dep
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Username already taken")
 
+    email = (body.email or "").strip() or None
+    if email:
+        existing_email = await db.execute(select(AdminUser).where(AdminUser.email == email))
+        if existing_email.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Email already in use")
+
     temp_password = secrets.token_urlsafe(10)
     admin = AdminUser(
         login_username=body.login_username,
         display_name=body.display_name,
+        email=email,
         login_password_hash=hash_password(temp_password),
         must_change_password=True,
     )
@@ -54,10 +67,32 @@ async def create_admin_user(body: CreateAdminUserRequest, db: AsyncSession = Dep
         id=admin.id,
         display_name=admin.display_name,
         login_username=admin.login_username,
+        email=admin.email,
         is_active=admin.is_active,
         must_change_password=admin.must_change_password,
         temp_password=temp_password,
     )
+
+
+@router.patch("/{user_id}/email", response_model=AdminUserOut)
+async def update_admin_email(user_id: str, body: UpdateAdminEmailRequest, db: AsyncSession = Depends(get_db), _=Depends(admin_only)):
+    result = await db.execute(select(AdminUser).where(AdminUser.id == user_id))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    email = (body.email or "").strip() or None
+    if email:
+        existing_email = await db.execute(
+            select(AdminUser).where(AdminUser.email == email, AdminUser.id != user_id)
+        )
+        if existing_email.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Email already in use")
+
+    admin.email = email
+    await db.commit()
+    await db.refresh(admin)
+    return admin
 
 
 @router.patch("/{user_id}/deactivate")

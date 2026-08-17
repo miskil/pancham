@@ -527,6 +527,7 @@ function VillageUsersPanel({ villageId, villageName }) {
   const [newName, setNewName] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newUserType, setNewUserType] = useState("VDC");
+  const [newEmail, setNewEmail] = useState("");
   const [newResult, setNewResult] = useState(null);
 
   useEffect(() => {
@@ -542,12 +543,14 @@ function VillageUsersPanel({ villageId, villageName }) {
         display_name: newName || null,
         login_username: newUsername || null,
         user_type: newUserType,
+        email: newEmail || null,
       });
       setNewResult(u);
       setUsers((prev) => [...(prev || []), u]);
       setNewName("");
       setNewUsername("");
       setNewUserType("VDC");
+      setNewEmail("");
     } catch (err) { alert(err.message); }
     finally { setAdding(false); }
   }
@@ -556,6 +559,15 @@ function VillageUsersPanel({ villageId, villageName }) {
     try {
       const r = await api.resetVillageUserPassword(villageId, userId);
       alert(`New password for ${r.login_username}:\n${r.temp_password}`);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function editEmail(u) {
+    const next = prompt(`Email for ${u.login_username} (used for "forgot password" resets):`, u.email || "");
+    if (next === null) return;
+    try {
+      const updated = await api.updateVillageUserEmail(villageId, u.id, next.trim() || null);
+      setUsers((prev) => prev.map((x) => x.id === u.id ? updated : x));
     } catch (err) { alert(err.message); }
   }
 
@@ -576,7 +588,7 @@ function VillageUsersPanel({ villageId, villageName }) {
         <table className="w-full text-xs">
           <thead><tr className="text-left text-gray-500 border-b">
             <th className="pb-1">Username</th><th className="pb-1">Name</th>
-            <th className="pb-1">Type</th>
+            <th className="pb-1">Type</th><th className="pb-1">Email</th>
             <th className="pb-1">Active</th><th className="pb-1"></th>
           </tr></thead>
           <tbody>
@@ -585,8 +597,10 @@ function VillageUsersPanel({ villageId, villageName }) {
                 <td className="py-1 font-mono">{u.login_username}</td>
                 <td className="py-1 text-gray-600">{u.display_name || "—"}</td>
                 <td className="py-1 text-gray-600">{u.user_type || "VDC"}</td>
+                <td className="py-1 text-gray-600">{u.email || "—"}</td>
                 <td className="py-1">{u.is_active ? "✓" : <span className="text-red-500">off</span>}</td>
                 <td className="py-1 flex gap-2">
+                  <button onClick={() => editEmail(u)} className="text-primary-600 hover:underline">Edit email</button>
                   <button onClick={() => resetPw(u.id)} className="text-primary-600 hover:underline">Reset pw</button>
                   {u.is_active && (
                     <button onClick={() => deactivate(u.id)} className="text-red-500 hover:underline">Deactivate</button>
@@ -630,6 +644,11 @@ function VillageUsersPanel({ villageId, villageName }) {
             <option value="NGO">NGO</option>
           </select>
         </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">Email (optional)</label>
+          <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
+            className="border rounded px-2 py-1 text-xs w-44" placeholder="for password resets" />
+        </div>
         <button onClick={addUser} disabled={adding}
           className="bg-primary-700 text-white rounded px-3 py-1 text-xs disabled:opacity-60">
           {adding ? "Adding…" : "+ Add User"}
@@ -644,6 +663,7 @@ function AdminUsersTab() {
   const [users, setUsers] = useState([]);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
   const [adding, setAdding] = useState(false);
   const [newResult, setNewResult] = useState(null);
 
@@ -654,11 +674,12 @@ function AdminUsersTab() {
     setAdding(true);
     setNewResult(null);
     try {
-      const u = await api.createAdminUser({ login_username: username, display_name: displayName || null });
+      const u = await api.createAdminUser({ login_username: username, display_name: displayName || null, email: email || null });
       setNewResult(u);
       setUsers((prev) => [...prev, u]);
       setUsername("");
       setDisplayName("");
+      setEmail("");
     } catch (err) { alert(err.message); }
     finally { setAdding(false); }
   }
@@ -667,6 +688,15 @@ function AdminUsersTab() {
     try {
       const r = await api.resetAdminPassword(userId);
       alert(`New password for ${r.login_username}:\n${r.temp_password}`);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function editEmail(u) {
+    const next = prompt(`Email for ${u.login_username} (used for "forgot password" resets):`, u.email || "");
+    if (next === null) return;
+    try {
+      const updated = await api.updateAdminEmail(u.id, next.trim() || null);
+      setUsers((prev) => prev.map((x) => x.id === u.id ? updated : x));
     } catch (err) { alert(err.message); }
   }
 
@@ -693,6 +723,11 @@ function AdminUsersTab() {
             <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               className="border rounded px-3 py-2 text-sm w-44" placeholder="e.g. Ramesh Patil" />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Email (optional)</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="border rounded px-3 py-2 text-sm w-52" placeholder="for password resets" />
+          </div>
           <button type="submit" disabled={adding}
             className="bg-primary-700 text-white rounded px-4 py-2 text-sm disabled:opacity-60">
             {adding ? "Creating…" : "Create Admin User"}
@@ -715,7 +750,7 @@ function AdminUsersTab() {
         ) : (
           <table className="w-full text-sm">
             <thead><tr className="text-left text-gray-500 border-b">
-              <th className="pb-2">Username</th><th className="pb-2">Name</th>
+              <th className="pb-2">Username</th><th className="pb-2">Name</th><th className="pb-2">Email</th>
               <th className="pb-2">Active</th><th className="pb-2"></th>
             </tr></thead>
             <tbody>
@@ -723,8 +758,10 @@ function AdminUsersTab() {
                 <tr key={u.id} className="border-b last:border-0">
                   <td className="py-2 font-mono">{u.login_username}</td>
                   <td className="py-2 text-gray-600">{u.display_name || "—"}</td>
+                  <td className="py-2 text-gray-600">{u.email || "—"}</td>
                   <td className="py-2">{u.is_active ? <span className="text-green-700">✓</span> : <span className="text-red-400">off</span>}</td>
                   <td className="py-2 flex gap-3">
+                    <button onClick={() => editEmail(u)} className="text-xs text-primary-600 hover:underline">Edit email</button>
                     <button onClick={() => resetPw(u.id)} className="text-xs text-primary-600 hover:underline">Reset pw</button>
                     {u.is_active && (
                       <button onClick={() => deactivate(u.id)} className="text-xs text-red-500 hover:underline">Deactivate</button>
