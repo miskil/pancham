@@ -7,6 +7,12 @@ export const listFundingRounds = () => get("/village/funding-rounds");
 export const updateFundingRound = (roundId, body) => patch(`/village/funding-rounds/${roundId}`, body);
 export const uploadReceipt = (roundId, formData) => postForm(`/village/funding-rounds/${roundId}/receipt`, formData);
 
+export const listMou = () => get("/village/mou");
+export const updateMouNotes = (mouId, body) => patch(`/village/mou/${mouId}`, body);
+export const uploadMouSignedDocument = (mouId, formData) => postForm(`/village/mou/${mouId}/signed-document`, formData);
+export const downloadMouDraftDocument = (mouId) => download(`/village/mou/${mouId}/draft-document`, "GET");
+export const downloadMouSignedDocument = (mouId) => download(`/village/mou/${mouId}/signed-document`, "GET");
+
 export const getProposal = () => get("/village/proposal");
 export const createProposal = (body) => post("/village/proposal", body);
 export const updateProposal = (body) => patch("/village/proposal", body);
